@@ -2,9 +2,209 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Чат</title>
+    <style>
+        #chat-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        #message-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        #input-container {
+            margin-top: 10px;
+        }
+        .message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            width: fit-content;
+        }
+        .mine {
+            background-color: #dcf8c6;
+            margin-left: auto;
+        }
+        .theirs {
+            background-color: #eaeaea;
+        }
+    </style>
 </head>
 <body>
+<div id="chat-container">
+    <div id="message-container">
+        <!-- FOR MESSAGES -->
+    </div>
+    <div id="input-container">
+        <input type="text" id="message-input" placeholder="Въведете съобщение...">
+        <button id="send-message">Изпрати</button>
+    </div>
+</div>
+
+<div id="waiting-for-partner" style="display:none;">
+    <p>Търсим свободен събеседник...</p>
+    <!-- Вставьте здесь ваш лоадер -->
+</div>
+
+<button id="end-chat-btn" onclick="endChat()">Приключи чата</button>
+<button id="change-settings-btn" onclick="changeSettings()" style="display:none;">Промени филтрите</button>
+<button id="start-new-chat-btn" onclick="startNewChat()" style="display:none;">Нов чат</button>
+ {% csrf_token %}
+
+ <script> // CSRFTOKEN
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+ </script>
+
+<script> // LOGIC
+    let chatActive = true;
+
+    window.addEventListener("beforeunload", function (event) {
+        if (chatActive) {
+            // End chat notif
+            navigator.sendBeacon('/api/user_left_chat', JSON.stringify({room_id: '{{room_id}}'}));
+        }
+    });
+
+    function endChat() {
+        chatActive = false;
+        document.getElementById('chat-container').style.display = 'none';
+        document.getElementById('change-settings-btn').style.display = 'block';
+        document.getElementById('start-new-chat-btn').style.display = 'block';
+
+        fetch('/api/end_chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({room_id: 'yourRoomId'})
+        });
+    }
+
+    function changeSettings() {
+        window.location.href = '/chat';
+    }
+
+    function startNewChat() {
+        window.location.href = '/start_chat';
+    }
+</script>
+
+<script>
+    const roomContainer = document.getElementById('message-container');
+    const inputElement = document.getElementById('message-input');
+    const sendMessageButton = document.getElementById('send-message');
+
+    const chatSocket = new WebSocket('ws://localhost:8000/ws/chat/{{room_id}}/');
+
+    chatSocket.onmessage = function (e) {
+        
+        const data = JSON.parse(e.data);
+        console.log('DATA')
+        console.log(data)
+        displayMessage(data);
+    };
+
+    chatSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    
+
+    function isMyMessage(sessionId) {
+        return '{{session_key}}' === sessionId;
+    }
+
+    sendMessageButton.onclick = function (e) {
+        const message = inputElement.value;
+        chatSocket.send(JSON.stringify({
+            'message': message,
+            'room_id': '{{ room_id }}',
+            'session_id': '{{session_key}}'
+        }));
+        inputElement.value = '';
+        roomContainer.scrollTop = roomContainer.scrollHeight;
+    };
+
+    inputElement.onkeyup = function (e) {
+        if (e.keyCode === 13) {  // enter, return
+            sendMessageButton.click();
+        }
+    };
+    function displayMessage(data) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+
+        if (isMyMessage(data.session_id)) {
+            messageElement.classList.add('mine');
+        } else {
+            messageElement.classList.add('theirs');
+        }
+
+        messageElement.textContent = data.message;
+        roomContainer.appendChild(messageElement);
+
+        roomContainer.scrollTop = roomContainer.scrollHeight;
+    }
+</script>
+
+<script>
+    function loadMessages() {
+            fetch(`/chat/get_messages/{{room_id}}/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrftoken}
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        displayMessages(data.messages);
+                    } else {
+                        console.error('Error while loading messages:', data.message);
+                    }
+                });
+        }
+    function displayMessages(messages) {
+            const messageContainer = document.getElementById('message-container');
+            messageContainer.innerHTML = '';
+
+            messages.forEach(msg => {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.textContent = msg.content;
+                
+                if (isMyMessage(msg.session_id)) {
+                    messageElement.classList.add('mine');
+                } else {
+                    messageElement.classList.add('theirs');
+                }
+
+                messageContainer.appendChild(messageElement);
+            });
+            roomContainer.scrollTop = roomContainer.scrollHeight;
+        }
+    document.addEventListener('DOMContentLoaded', loadMessages);
+</script>
 
 </body>
 </html>

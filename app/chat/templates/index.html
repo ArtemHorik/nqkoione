@@ -1,126 +1,170 @@
 <!DOCTYPE html>
-<html lang="bg">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Анонимен Чат</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        .filter-btn {
-            margin: 5px;
-            padding: 10px;
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
         }
-
-        .active {
-            background-color: #007bff;
+        #chat-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .button-group {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px;
+            margin-right: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background-color: #f4f4f4;
+            cursor: pointer;
+        }
+        button.active {
+            background-color: #4CAF50;
             color: white;
         }
-
-        .multi-select {
-            border: 1px solid #007bff;
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
-
-        .multi-select.active {
-            background-color: #0056b3;
+        #start-chat-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
         }
-
-        #start-chat {
-            margin-top: 20px;
+        #start-chat-button:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
-<div class="container mt-5">
-    <h2>Тема на общуването:</h2>
-    <div id="topic" class="btn-group" role="group">
-        <button type="button" class="btn btn-secondary filter-btn active">Общуване</button>
-        <button type="button" class="btn btn-secondary filter-btn">Флирт 18+</button>
+    <div id="chat-container">
+        <form id="chat-form">
+            <div class="button-group" id="my-gender">
+                <label>Вашия пол:</label>
+                <button type="button" class="gender-btn" onclick="selectGender('my-gender', 'male')">Мъжки</button>
+                <button type="button" class="gender-btn" onclick="selectGender('my-gender', 'female')">Женски</button>
+                <button type="button" class="gender-btn active" onclick="selectGender('my-gender', 'not-specified')">Някой</button>
+            </div>
+
+            <div class="button-group" id="partner-gender">
+                <label>Пол на събеседника:</label>
+                <button type="button" class="gender-btn" onclick="selectGender('partner-gender', 'male')" disabled>Мъжски</button>
+                <button type="button" class="gender-btn" onclick="selectGender('partner-gender', 'female')" disabled>Женски</button>
+                <button type="button" class="gender-btn" onclick="selectGender('partner-gender', 'not-specified')" disabled>Някой</button>
+            </div>
+
+            <div class="button-group" id="chat-topic">
+                <label>Тема:</label>
+                <button type="button" class="topic-btn active" onclick="selectTopic('chat')">Общуване</button>
+                <button type="button" class="topic-btn" onclick="selectTopic('flirt')">Флирт 18+</button>
+            </div>
+
+            <button type="button" id="start-chat-button" onclick="startChat()">Започни чат</button>
+        {% csrf_token %}
+        </form>
     </div>
-    <h2>Вашият пол:</h2>
-    <div id="gender" class="btn-group" role="group">
-        <button type="button" class="btn btn-secondary filter-btn active">Някой</button>
-        <button type="button" class="btn btn-secondary filter-btn">М</button>
-        <button type="button" class="btn btn-secondary filter-btn">Ж</button>
-    </div>
-    <h2>Пол на събеседника:</h2>
-    <div id="partner-gender" class="btn-group" role="group">
-        <button type="button" class="btn btn-secondary filter-btn active">Не важно</button>
-        <button type="button" class="btn btn-secondary filter-btn">М</button>
-        <button type="button" class="btn btn-secondary filter-btn">Ж</button>
-    </div>
+
     
-    <h2>Вашата възраст:</h2>
-    <div id="age" class="btn-group" role="group">
-        <button type="button" class="btn btn-secondary filter-btn">до 17 лет</button>
-        <button type="button" class="btn btn-secondary filter-btn">от 18 до 21 года</button>
-        <button type="button" class="btn btn-secondary filter-btn">от 22 до 25 лет</button>
-        <button type="button" class="btn btn-secondary filter-btn">от 26 до 35 лет</button>
-        <button type="button" class="btn btn-secondary filter-btn">старше 36 лет</button>
-    </div>
-
-    <h2>Възраст на събеседника:</h2>
-    <div id="partner-age" class="btn-group" role="group">
-        <button type="button" class="btn btn-secondary filter-btn multi-select">до 17 лет</button>
-        <button type="button" class="btn btn-secondary filter-btn multi-select">от 18 до 21 года</button>
-        <button type="button" class="btn btn-secondary filter-btn multi-select">от 22 до 25 лет</button>
-        <button type="button" class="btn btn-secondary filter-btn multi-select">от 26 до 35 лет</button>
-        <button type="button" class="btn btn-secondary filter-btn multi-select">старше 36 лет</button>
-    </div>
-    <p class="text-muted">Можете да са няколко</p>
-    <h2>Цветова схема:</h2>
-    <div id="theme" class="btn-group" role="group">
-        <button type="button" class="btn btn-secondary filter-btn active">Светла</button>
-        <button type="button" class="btn btn-secondary filter-btn">Тъмна</button>
-    </div>
-    <button id="start-chat" type="button" class="btn btn-success btn-lg btn-block">Начать чат</button>
-    <div class="mt-4">Онлайн: <span id="users-online">5742</span> потребители</div>
-</div>
-
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script>
-
-    function toggleActiveClass(button) {
-        if (button.classList.contains('multi-select')) {
-            button.classList.toggle('active');
-        } else {
-            let siblings = button.parentElement.children;
-            for (let sibling of siblings) {
-                sibling.classList.remove('active');
-            }
-            button.classList.add('active');
-        }
-    }
-
-    // Filter buttons events
-    document.querySelectorAll('.filter-btn').forEach(button => {
-        button.addEventListener('click', function () {
-            toggleActiveClass(this);
-        });
-    });
-    
-    function collectFilterData() {
-        let topic = document.querySelector('#topic .active').textContent;
-        let gender = document.querySelector('#gender .active').textContent;
-        let partnerGender = document.querySelector('#partner-gender .active').textContent;
-        let age = document.querySelector('#age .active').textContent;
-        let partnerAges = Array.from(document.querySelectorAll('#partner-age .active')).map(button => button.textContent);
-
-        return {
-            topic: topic,
-            gender: gender,
-            partnerGender: partnerGender,
-            age: age,
-            partnerAges: partnerAges
-        };
-    }
-
-    // Start chat button
-    document.querySelector('#start-chat').addEventListener('click', function () {
-        let filters = collectFilterData();
-        console.log(filters); 
+    <script>
         
-    });
-</script>
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 
+    const csrftoken = getCookie('csrftoken');
+    </script>
+    
+    <script>
+        let selectedGenders = {
+            'my-gender': 'not-specified',
+            'partner-gender': 'not-specified'
+        };
+        let selectedTopic = 'chat';
+
+        function selectGender(group, gender) {
+            selectedGenders[group] = gender;
+            document.querySelectorAll('#' + group + ' .gender-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            updatePartnerGenderSelection();
+        }
+
+        function selectTopic(topic) {
+            selectedTopic = topic;
+            document.querySelectorAll('#chat-topic .topic-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function updatePartnerGenderSelection() {
+            const partnerGenderButtons = document.querySelectorAll('#partner-gender .gender-btn');
+            if (selectedGenders['my-gender'] === 'not-specified') {
+                partnerGenderButtons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.remove('active');
+                });
+            } else {
+                partnerGenderButtons.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        function startChat() {
+            fetch('/chat/search', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    my_gender: selectedGenders['my-gender'],
+                    partner_gender: selectedGenders['partner-gender'],
+                    topic: selectedTopic
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Room ID:', data.room_id);
+                    handleSearchResponse(data);
+                } else {
+                    console.error('Error:', data.message);
+                }
+            });
+        }
+        function handleSearchResponse(data) {
+            if (data.room_id.length > 0) {
+                window.location.href = '/chat/room/' + data.room_id;
+            } else {
+                alert("No room was found");
+            }
+        }
+        
+
+        document.addEventListener('DOMContentLoaded', updatePartnerGenderSelection);
+    </script>
 </body>
 </html>

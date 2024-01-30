@@ -1,11 +1,14 @@
 import json
+import random
 
+from bson import ObjectId
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
+from mongoengine import DoesNotExist, ValidationError
 
-from .models import ChatRoom, Message
+from .models import ChatRoom, Message, search_chat_room, create_chat_room
 
 
 def index(request):
@@ -14,45 +17,25 @@ def index(request):
     :param request:
     :return:
     """
+    request.session.create()
     return render(request, 'index.html')
 
-def room(request, room_name):
+
+def room(request, room_id):
     """
     Chat room view.
     :param request:
-    :param room_name:
+    :param room_id:
     :return:
     """
     return render(request, 'room.html', {
-        'room_name': room_name
+        'room_id': room_id,
+        'session_key': request.session.session_key
     })
 
-@require_POST
-def create_chat_room(request):
-    """
-    Creating chat room.
-    :param request:
-    :return:
-    """
-    data = request.POST
-    room_title = data.get('title')
-    topic = data.get('topic')
-    allowed_genders = data.get('allowedGenders', [])
-    age_range = data.get('ageRange', [])
-
-    new_room = ChatRoom(
-        title=room_title,
-        topic=topic,
-        allowed_genders=allowed_genders,
-        age_range=age_range
-    )
-    new_room.save()
-
-    return JsonResponse({'status': 'success', 'room_id': str(new_room.id)})
-
 
 @require_POST
-def search_chat_rooms(request):
+def search_or_create_chat_room(request):
     """
     Searching chat room.
     :param request:
@@ -61,31 +44,21 @@ def search_chat_rooms(request):
     try:
         data = json.loads(request.body)
         topic = data.get('topic')
-        gender = data.get('gender')
-        partner_gender = data.get('partnerGender')
-        partner_ages = data.get('partnerAges', [])
+        my_gender = data.get('my_gender')
+        search_gender = data.get('partner_gender', None)
+        # partner_age = data.get('partner_age', None)
+        print(data)
 
-        # Find matching chat rooms
-        query = {
-            'topic': topic,
-            'allowed_genders__in': [partner_gender, 'X']
-        }
+        chat_room = search_chat_room(topic, my_gender, search_gender)
 
-        # Age filter if partner_ages are provided
-        if partner_ages:
-            query['age_range__in'] = partner_ages
+        if not chat_room:
+            chat_room = create_chat_room(topic, my_gender, search_gender)
 
-        chat_rooms = ChatRoom.objects(**query)
+        return JsonResponse({'status': 'success', 'room_id': str(chat_room.id)})
 
-        # Serialize the chat rooms data for the response
-        chat_rooms_data = [{
-            'title': room.title,
-            'created_at': room.created_at.strftime('%Y-%m-%d %H:%M:%S')
-        } for room in chat_rooms]
-
-        return JsonResponse({'chat_rooms': chat_rooms_data})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
 
 @require_POST
 def post_message(request):
@@ -110,7 +83,24 @@ def post_message(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-@require_POST
+
+def check_room_status(request, room_id):
+    try:
+        room = ChatRoom.objects.get(id=room_id)
+        return JsonResponse({'second_user_joined': room.second_user_joined})
+    except DoesNotExist:
+        return JsonResponse({'error': 'Room not found'}, status=404)
+
+
+def join_room(request, room_id):
+    try:
+        room = ChatRoom.objects.get(id=room_id)
+        room.join_second_user()
+        return JsonResponse({'success': 'User joined the room'})
+    except DoesNotExist:
+        return JsonResponse({'error': 'Room not found'}, status=404)
+
+
 def get_messages(request, room_id):
     """
     Retrieves messages for room.
@@ -119,7 +109,17 @@ def get_messages(request, room_id):
     :return:
     """
     try:
-        messages = Message.objects.filter(room__id=room_id).order_by('-timestamp')
+        try:
+            room_id_obj = ObjectId(room_id)
+        except ValidationError:
+            return JsonResponse({'error': 'Invalid room ID'}, status=400)
+
+        try:
+            room = ChatRoom.objects.get(id=room_id_obj)
+        except DoesNotExist:
+            return JsonResponse({'error': 'Room not found'}, status=404)
+
+        messages = Message.objects.filter(room=room).order_by('timestamp')
 
         messages_data = [{
             'session_id': message.session_id,
