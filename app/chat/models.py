@@ -29,8 +29,12 @@ class ChatRoom(Document):
     }
 
     def join_second_user(self):
-        self.second_user_joined = True
-        self.save()
+        if not self.second_user_joined:
+            self.second_user_joined = True
+            self.save()
+
+    def is_full(self):
+        return self.second_user_joined
 
 
 class Message(Document):
@@ -53,15 +57,16 @@ class Message(Document):
 
 def search_chat_room(topic, my_gender, search_gender=None, partner_age=None):
     if my_gender == 'not-specified':
-        chat_room = ChatRoom.objects.filter(topic=topic, search_gender='not-specified').first()
+        chat_room = ChatRoom.objects.filter(topic=topic, search_gender='not-specified', second_user_joined=False).first()
     elif search_gender == 'not-specified':
-        chat_room = ChatRoom.objects.filter(topic=topic).first()
+        chat_room = ChatRoom.objects.filter(topic=topic, second_user_joined=False).first()
     else:
         # all filters
         chat_room = ChatRoom.objects.filter(
             topic=topic,
             creator_gender=search_gender,
             search_gender__in=['not-specified', my_gender],
+            second_user_joined=False,
             # age_range=partner_age
         ).first()
 

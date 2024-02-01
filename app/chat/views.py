@@ -50,8 +50,7 @@ def search_or_create_chat_room(request):
         print(data)
 
         chat_room = search_chat_room(topic, my_gender, search_gender)
-
-        if not chat_room:
+        if not chat_room or chat_room.is_full():
             chat_room = create_chat_room(topic, my_gender, search_gender)
 
         return JsonResponse({'status': 'success', 'room_id': str(chat_room.id)})
