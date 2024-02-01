@@ -1,8 +1,9 @@
-from decouple import config
-from django.test import TestCase
-from mongoengine import connect, disconnect
+import json
 
-from .models import ChatRoom, search_chat_room
+from django.test import TestCase, Client
+from django.urls import reverse
+
+from .models import ChatRoom, search_chat_room, create_chat_room
 from datetime import datetime
 
 
@@ -66,7 +67,6 @@ class ChatRoomModelTest(TestCase):
 
 
 class ChatRoomSearchTest(TestCase):
-
     topic1 = 'chat'
     topic2 = 'flirt'
     g_male = 'male'
@@ -135,7 +135,72 @@ class ChatRoomSearchTest(TestCase):
         found_room = search_chat_room(self.topic1, my_gender=self.g_male, search_gender=self.g_nqkoi)
         self.assertNotEqual(self.chatroom_nqkoi, found_room)
 
+    @classmethod
+    def tearDownClass(cls):
+        """DB clear after tests."""
+        ChatRoom.objects.all().delete()
 
+
+class IndexViewTests(TestCase):
+    def setUp(self):
+        """Setups Client for views tests."""
+        self.client = Client()
+
+    def test_index_view_template(self):
+        """Tests template of index page view."""
+        response = self.client.get(reverse('index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'index.html')
+
+
+class SearchOrCreateChatRoomTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.topic = "chat"
+        self.gender = "male"
+        self.search_gender = "female"
+
+    def test_search_existing_chat_room(self):
+        """
+        Tests existing chat room search
+        :return:
+        """
+        existing_room = create_chat_room(topic=self.topic, my_gender=self.gender, search_gender=self.search_gender)
+
+        data = json.dumps({
+            'topic': self.topic,
+            'my_gender': self.search_gender,
+            'search_gender': self.gender
+        })
+
+        response = self.client.post(reverse('search'), data, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+
+        response_data = json.loads(response.content)
+
+        self.assertIn('room_id', response_data, "Response does not contain 'room_id'.")
+
+        # Comparing room_id
+        self.assertEqual(str(existing_room.id), response_data['room_id'],
+                         "The room_id in the response does not match the existing room.")
+
+    def test_create_new_chat_room(self):
+        """
+        Tests creating new chat with flirt theme
+        :return:
+        """
+        new_topic = "flirt"
+        data = json.dumps({
+            'topic': new_topic,
+            'my_gender': self.gender,
+            'search_gender': self.search_gender
+        })
+        response = self.client.post(reverse('search'), data, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        # Check that new room was created
+        created_room = ChatRoom.objects.filter(topic=new_topic, creator_gender=self.gender,
+                                               search_gender=self.search_gender).first()
+        self.assertIsNotNone(created_room, "The chat room was not created.")
 
     @classmethod
     def tearDownClass(cls):

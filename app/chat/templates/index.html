@@ -52,16 +52,16 @@
         <form id="chat-form">
             <div class="button-group" id="my-gender">
                 <label>Вашия пол:</label>
-                <button type="button" class="gender-btn" onclick="selectGender('my-gender', 'male')">Мъжки</button>
-                <button type="button" class="gender-btn" onclick="selectGender('my-gender', 'female')">Женски</button>
-                <button type="button" class="gender-btn active" onclick="selectGender('my-gender', 'not-specified')">Някой</button>
+                <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'male')">Мъжки</button>
+                <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'female')">Женски</button>
+                <button type="button" class="gender-btn active" onclick="selectGender('my_gender', 'not-specified')">Някой</button>
             </div>
 
             <div class="button-group" id="partner-gender">
                 <label>Пол на събеседника:</label>
-                <button type="button" class="gender-btn" onclick="selectGender('partner-gender', 'male')" disabled>Мъжски</button>
-                <button type="button" class="gender-btn" onclick="selectGender('partner-gender', 'female')" disabled>Женски</button>
-                <button type="button" class="gender-btn" onclick="selectGender('partner-gender', 'not-specified')" disabled>Някой</button>
+                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'male')" disabled>Мъжски</button>
+                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'female')" disabled>Женски</button>
+                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'not-specified')" disabled>Някой</button>
             </div>
 
             <div class="button-group" id="chat-topic">
@@ -99,8 +99,8 @@
     
     <script>
         let selectedGenders = {
-            'my-gender': 'not-specified',
-            'partner-gender': 'not-specified'
+            'my_gender': 'not-specified',
+            'search_gender': 'not-specified'
         };
         let selectedTopic = 'chat';
 
@@ -123,7 +123,7 @@
 
         function updatePartnerGenderSelection() {
             const partnerGenderButtons = document.querySelectorAll('#partner-gender .gender-btn');
-            if (selectedGenders['my-gender'] === 'not-specified') {
+            if (selectedGenders['my_gender'] === 'not-specified') {
                 partnerGenderButtons.forEach(btn => {
                     btn.disabled = true;
                     btn.classList.remove('active');
@@ -140,8 +140,8 @@
                     'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    my_gender: selectedGenders['my-gender'],
-                    partner_gender: selectedGenders['partner-gender'],
+                    my_gender: selectedGenders['my_gender'],
+                    search_gender: selectedGenders['search_gender'],
                     topic: selectedTopic
                 })
             })

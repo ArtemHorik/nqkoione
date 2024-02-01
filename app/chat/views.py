@@ -45,7 +45,7 @@ def search_or_create_chat_room(request):
         data = json.loads(request.body)
         topic = data.get('topic')
         my_gender = data.get('my_gender')
-        search_gender = data.get('partner_gender', None)
+        search_gender = data.get('search_gender', None)
         # partner_age = data.get('partner_age', None)
         print(data)
 
