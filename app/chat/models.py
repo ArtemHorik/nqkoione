@@ -59,7 +59,7 @@ def search_chat_room(topic, my_gender, search_gender=None, partner_age=None):
     if my_gender == 'not-specified':
         chat_room = ChatRoom.objects.filter(topic=topic, search_gender='not-specified', second_user_joined=False).first()
     elif search_gender == 'not-specified':
-        chat_room = ChatRoom.objects.filter(topic=topic, second_user_joined=False).first()
+        chat_room = ChatRoom.objects.filter(topic=topic, search_gender=my_gender, second_user_joined=False).first()
     else:
         # all filters
         chat_room = ChatRoom.objects.filter(

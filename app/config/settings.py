@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -77,7 +78,17 @@ ASGI_APPLICATION = 'config.asgi.application'
 from mongoengine import connect
 from decouple import config
 
-connect(host=config('MONGODB_URL'))
+if 'test' in sys.argv:
+    connect('test', host=config('MONGODB_URL'))
+else:
+    connect('nqkoione', host=config('MONGODB_URL'))
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
 
 CHANNEL_LAYERS = {
     'default': {
