@@ -50,14 +50,14 @@
 <body>
     <div id="chat-container">
         <form id="chat-form">
-            <div class="button-group" id="my-gender">
+            <div class="button-group" id="my_gender">
                 <label>Вашия пол:</label>
                 <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'male')">Мъжки</button>
                 <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'female')">Женски</button>
                 <button type="button" class="gender-btn active" onclick="selectGender('my_gender', 'not-specified')">Някой</button>
             </div>
 
-            <div class="button-group" id="partner-gender">
+            <div class="button-group" id="search_gender">
                 <label>Пол на събеседника:</label>
                 <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'male')" disabled>Мъжски</button>
                 <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'female')" disabled>Женски</button>
@@ -122,7 +122,7 @@
         }
 
         function updatePartnerGenderSelection() {
-            const partnerGenderButtons = document.querySelectorAll('#partner-gender .gender-btn');
+            const partnerGenderButtons = document.querySelectorAll('#search_gender .gender-btn');
             if (selectedGenders['my_gender'] === 'not-specified') {
                 partnerGenderButtons.forEach(btn => {
                     btn.disabled = true;

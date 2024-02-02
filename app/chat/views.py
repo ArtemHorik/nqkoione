@@ -3,7 +3,7 @@ import random
 
 from bson import ObjectId
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from mongoengine import DoesNotExist, ValidationError
@@ -28,6 +28,11 @@ def room(request, room_id):
     :param room_id:
     :return:
     """
+
+    room = ChatRoom.objects.get(id=room_id)
+    if not room:
+        return redirect('index')
+
     return render(request, 'room.html', {
         'room_id': room_id,
         'session_key': request.session.session_key
@@ -44,14 +49,14 @@ def search_or_create_chat_room(request):
     try:
         data = json.loads(request.body)
         topic = data.get('topic')
-        my_gender = data.get('my_gender')
-        search_gender = data.get('search_gender', None)
+        creator_gender = data.get('my_gender')
+        search_gender = data.get('search_gender')
         # partner_age = data.get('partner_age', None)
         print(data)
 
-        chat_room = search_chat_room(topic, my_gender, search_gender)
+        chat_room = search_chat_room(topic, creator_gender, search_gender)
         if not chat_room or chat_room.is_full():
-            chat_room = create_chat_room(topic, my_gender, search_gender)
+            chat_room = create_chat_room(topic, creator_gender, search_gender)
 
         return JsonResponse({'status': 'success', 'room_id': str(chat_room.id)})
 
@@ -129,3 +134,16 @@ def get_messages(request, room_id):
         return JsonResponse({'status': 'success', 'messages': messages_data})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def end_chat(request):
+    try:
+        data = json.loads(request.body)
+        room_id = data['room_id']
+        chat = ChatRoom.objects.get(id=room_id)
+        chat.is_active = False
+        chat.save()
+    except DoesNotExist:
+        return JsonResponse({'statur': 'error', 'message': 'Room does not exists'}, status=500)
+    return JsonResponse({'status': 'success'})
+

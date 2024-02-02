@@ -8,14 +8,15 @@ from datetime import datetime
 class ChatRoom(Document):
     room_id = UUIDField(binary=False, default=uuid.uuid4, unique=True)
     second_user_joined = BooleanField(default=False)
+
     topic = StringField(max_length=50, required=True)
 
     age_range = ListField(StringField(max_length=15), default=list)
     creator_age = StringField(max_length=15)
     creator_gender = StringField(max_length=15)
     search_gender = StringField(max_length=15)
-    # allowed_genders = ListField(StringField(max_length=20), default=list)
 
+    is_active = BooleanField(default=True)
     created_at = DateTimeField(default=datetime.now)
 
     meta = {
@@ -56,10 +57,14 @@ class Message(Document):
 
 
 def search_chat_room(topic, my_gender, search_gender=None):
+    print(topic, my_gender, search_gender)
     if my_gender == 'not-specified':
-        chat_room = ChatRoom.objects.filter(topic=topic, search_gender='not-specified', second_user_joined=False).first()
+        chat_room = ChatRoom.objects.filter(topic=topic, creator_gender=my_gender,
+                                            second_user_joined=False).first()
     elif search_gender == 'not-specified':
-        chat_room = ChatRoom.objects.filter(topic=topic, search_gender=my_gender, second_user_joined=False).first()
+        chat_room = ChatRoom.objects.filter(topic=topic, creator_gender__in=['male', 'female'],
+                                            search_gender__in=['not-specified', my_gender],
+                                            second_user_joined=False).first()
     else:
         # all filters
         chat_room = ChatRoom.objects.filter(
@@ -73,7 +78,7 @@ def search_chat_room(topic, my_gender, search_gender=None):
     return chat_room
 
 
-def create_chat_room(topic, my_gender, search_gender=None,):
+def create_chat_room(topic, my_gender, search_gender=None, ):
     new_room = ChatRoom(
         topic=topic,
         creator_gender=my_gender,

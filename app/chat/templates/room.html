@@ -97,17 +97,10 @@ function getCookie(name) {
 }
 
 const csrftoken = getCookie('csrftoken');
-</script>
 
-<script> // LOGIC
+ // LOGIC
 let chatActive = true;
 
-window.addEventListener("beforeunload", function (event) {
-    if (chatActive) {
-        // End chat notif
-        navigator.sendBeacon('/api/user_left_chat', JSON.stringify({room_id: '{{room_id}}'}));
-    }
-});
 
 function endChat() {
     chatActive = false;
@@ -115,13 +108,16 @@ function endChat() {
     document.getElementById('change-settings-btn').style.display = 'block';
     document.getElementById('start-new-chat-btn').style.display = 'block';
 
-    fetch('/api/end_chat', {
+    fetch('/api/end_chat/', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
         },
-        body: JSON.stringify({room_id: 'yourRoomId'})
-    });
+        body: JSON.stringify({room_id: '{{room_id}}'})
+    }).then(response => {
+        console.log('Chat ended')
+    }).catch(error => console.error('Chat end error: ', error));
+    sendEndChatSignal();
 }
 
 function changeSettings() {
@@ -131,9 +127,8 @@ function changeSettings() {
 function startNewChat() {
     window.location.href = '/start_chat';
 }
-</script>
 
-<script> // SOCKET
+// SOCKET
 
 const roomContainer = document.getElementById('message-container');
 const inputElement = document.getElementById('message-input');
@@ -148,8 +143,15 @@ function connect() {
 
     socket.onopen = function (e) {
         hideLoader();
+        
         socket.onmessage = function (e) {
             const data = JSON.parse(e.data);
+            if (data.type === 'end_chat') {
+                console.log(data.message);
+                chatActive = false
+                alert('CHAT ENDED');
+                return;
+            }
             if (data.type === 'second_user_joined') {
                 onSecondUserJoined();
             }
@@ -172,6 +174,14 @@ function connect() {
     };
 }
 
+function sendEndChatSignal() {
+    const message = {
+        action: 'end_chat',
+        room_id: '{{ room_id }}',
+        session_id: '{{session_key}}',
+        };
+    socket.send(JSON.stringify(message));
+}
 
 function onSecondUserJoined() {
     updateWaitingStatus(false);
@@ -219,7 +229,8 @@ function isMyMessage(sessionId) {
 }
 
 sendMessageButton.onclick = function (e) {
-    const message = inputElement.value;
+    if (chatActive) {
+        const message = inputElement.value;
     socket.send(JSON.stringify({
         'message': message,
         'room_id': '{{ room_id }}',
@@ -227,6 +238,8 @@ sendMessageButton.onclick = function (e) {
     }));
     inputElement.value = '';
     roomContainer.scrollTop = roomContainer.scrollHeight;
+    }
+    
 };
 
 inputElement.onkeyup = function (e) {
@@ -250,9 +263,7 @@ function displayMessage(data) {
 
     roomContainer.scrollTop = roomContainer.scrollHeight;
 }
-</script>
 
-<script>
     function loadMessages() {
         fetch(`/chat/get_messages/{{room_id}}/`, {
             method: 'POST',
