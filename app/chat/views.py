@@ -28,9 +28,9 @@ def room(request, room_id):
     :param room_id:
     :return:
     """
-
-    room = ChatRoom.objects.get(id=room_id)
-    if not room:
+    try:
+        room = ChatRoom.objects.get(id=room_id)
+    except DoesNotExist:
         return redirect('index')
 
     return render(request, 'room.html', {
@@ -131,7 +131,8 @@ def get_messages(request, room_id):
             'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
         } for message in messages]
 
-        return JsonResponse({'status': 'success', 'messages': messages_data})
+        return JsonResponse(
+            {'status': 'success', 'messages': messages_data, 'second_user_joined': room.second_user_joined})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -146,4 +147,3 @@ def end_chat(request):
     except DoesNotExist:
         return JsonResponse({'statur': 'error', 'message': 'Room does not exists'}, status=500)
     return JsonResponse({'status': 'success'})
-

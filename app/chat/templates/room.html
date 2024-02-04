@@ -1,71 +1,25 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Чат</title>
-    <style>
-        #chat-container {
-            display: flex;
-            flex-direction: column;
-            max-width: 600px;
-            margin: auto;
-        }
-
-        #message-container {
-            height: 400px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-        }
-
-        #input-container {
-            margin-top: 10px;
-        }
-
-        .message {
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            width: fit-content;
-        }
-
-        .mine {
-            background-color: #dcf8c6;
-            margin-left: auto;
-        }
-
-        .theirs {
-            background-color: #eaeaea;
-        }
-
-        #loader {
-            position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 20px;
-            color: #000;
-        }
-
-        #waiting-message {
-            position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 20px;
-            color: #000;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'chat/room.css' %}">
 </head>
 <body>
 <div id="chat-container">
+
     <div id="message-container">
-        <!-- FOR MESSAGES -->
+        
     </div>
+    
+    
+    
     <div id="input-container">
         <input type="text" id="message-input" placeholder="Въведете съобщение...">
-        <button id="send-message">Изпрати</button>
+        <button id="send-button">Изпрати</button>
     </div>
+    
 </div>
 
 <div id="waiting-message" style="display:none;">
@@ -98,13 +52,21 @@ function getCookie(name) {
 
 const csrftoken = getCookie('csrftoken');
 
- // LOGIC
-let chatActive = true;
+// LOGIC
+let chatActive = false;
+
+chatActive.onchange = function () {
+    if (chatActive) {
+        document.getElementById('end-chat-btn').style.display = 'block';
+    } else {
+    }
+}
 
 
 function endChat() {
+    addChatEndedBanner();
     chatActive = false;
-    document.getElementById('chat-container').style.display = 'none';
+    document.getElementById('end-chat-btn').style.display = 'none';
     document.getElementById('change-settings-btn').style.display = 'block';
     document.getElementById('start-new-chat-btn').style.display = 'block';
 
@@ -118,6 +80,7 @@ function endChat() {
         console.log('Chat ended')
     }).catch(error => console.error('Chat end error: ', error));
     sendEndChatSignal();
+    
 }
 
 function changeSettings() {
@@ -132,7 +95,7 @@ function startNewChat() {
 
 const roomContainer = document.getElementById('message-container');
 const inputElement = document.getElementById('message-input');
-const sendMessageButton = document.getElementById('send-message');
+const sendMessageButton = document.getElementById('send-button');
 
 let socket;
 let attemptCount = 0;
@@ -143,21 +106,30 @@ function connect() {
 
     socket.onopen = function (e) {
         hideLoader();
-        
+
         socket.onmessage = function (e) {
             const data = JSON.parse(e.data);
             if (data.type === 'end_chat') {
                 console.log(data.message);
-                chatActive = false
-                alert('CHAT ENDED');
+                addChatEndedBanner();
+                chatActive = false;
+                {#alert('CHAT ENDED');#}
+                
                 return;
-            }
-            if (data.type === 'second_user_joined') {
+            } else if (data.type === 'second_user_joined') {
                 onSecondUserJoined();
+                displayMessage(data);
+                chatActive = true;
+
+            } else if (data.type === 'reconnect') {
+                updateWaitingStatus(false);
+                chatActive = true;
+            } else {
+                displayMessage(data);
             }
             console.log('DATA')
             console.log(data)
-            displayMessage(data);
+
         };
 
         socket.onclose = function (e) {
@@ -175,12 +147,14 @@ function connect() {
 }
 
 function sendEndChatSignal() {
+    chatActive = false;
     const message = {
         action: 'end_chat',
         room_id: '{{ room_id }}',
         session_id: '{{session_key}}',
-        };
+    };
     socket.send(JSON.stringify(message));
+
 }
 
 function onSecondUserJoined() {
@@ -196,13 +170,8 @@ function updateWaitingStatus(isWaiting) {
     }
 }
 
-function onEnterChatRoom() {
-    updateWaitingStatus(true); 
-}
-
 window.onload = function () {
     connect();
-    onEnterChatRoom();
 };
 
 function reconnect() {
@@ -231,15 +200,15 @@ function isMyMessage(sessionId) {
 sendMessageButton.onclick = function (e) {
     if (chatActive) {
         const message = inputElement.value;
-    socket.send(JSON.stringify({
-        'message': message,
-        'room_id': '{{ room_id }}',
-        'session_id': '{{session_key}}'
-    }));
-    inputElement.value = '';
-    roomContainer.scrollTop = roomContainer.scrollHeight;
+        socket.send(JSON.stringify({
+            'message': message,
+            'room_id': '{{ room_id }}',
+            'session_id': '{{session_key}}'
+        }));
+        inputElement.value = '';
+        roomContainer.scrollTop = roomContainer.scrollHeight;
     }
-    
+
 };
 
 inputElement.onkeyup = function (e) {
@@ -264,42 +233,67 @@ function displayMessage(data) {
     roomContainer.scrollTop = roomContainer.scrollHeight;
 }
 
-    function loadMessages() {
-        fetch(`/chat/get_messages/{{room_id}}/`, {
-            method: 'POST',
-            headers: {'X-CSRFToken': csrftoken}
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    displayMessages(data.messages);
+function loadMessages() {
+    fetch(`/chat/get_messages/{{room_id}}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken}
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                displayMessages(data.messages);
+                if (data.second_user_joined) {
+                    updateWaitingStatus(false);
                 } else {
-                    console.error('Error while loading messages:', data.message);
+                    updateWaitingStatus(true);
                 }
-            });
-    }
-
-    function displayMessages(messages) {
-        const messageContainer = document.getElementById('message-container');
-        messageContainer.innerHTML = '';
-
-        messages.forEach(msg => {
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message');
-            messageElement.textContent = msg.content;
-
-            if (isMyMessage(msg.session_id)) {
-                messageElement.classList.add('mine');
             } else {
-                messageElement.classList.add('theirs');
+                console.error('Error while loading messages:', data.message);
             }
-
-            messageContainer.appendChild(messageElement);
         });
-        roomContainer.scrollTop = roomContainer.scrollHeight;
-    }
+}
 
-    document.addEventListener('DOMContentLoaded', loadMessages);
+function displayMessages(messages) {
+    const messageContainer = document.getElementById('message-container');
+    {#messageContainer.innerHTML = '';#}
+
+    messages.forEach(msg => {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        messageElement.textContent = msg.content;
+
+        if (isMyMessage(msg.session_id)) {
+            messageElement.classList.add('mine');
+        } else {
+            messageElement.classList.add('theirs');
+        }
+
+        messageContainer.appendChild(messageElement);
+    });
+    roomContainer.scrollTop = roomContainer.scrollHeight;
+}
+
+function addChatEndedBanner() {
+    if (!chatActive) {
+        return;
+    }
+    const chatContainer = document.getElementById('message-container');
+    const bannerHtml = `
+        <div class="chat-end-status">
+    <div class="chat-end-message">Чатът е завършен.</div>
+    <div class="chat-end-complaint">Flag user</div>
+    <div class="chat-end-buttons">
+        <button class="chat-end-button modify-params" onclick="changeSettings()">Промяна на филтри</button>
+        <button class="chat-end-button start-new" onclick="startNewChat()">Нов чат</button>
+    </div>
+</div>
+    `;
+
+    chatContainer.insertAdjacentHTML('afterend', bannerHtml);
+}
+
+
+document.addEventListener('DOMContentLoaded', loadMessages);
 </script>
 
 </body>

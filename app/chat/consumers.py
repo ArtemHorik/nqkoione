@@ -42,15 +42,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        if not is_reconnect:
-            self.session_ids[self.room_id].append(session_id)
-
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
+
+        if not is_reconnect:
+            self.session_ids[self.room_id].append(session_id)
+        else:
+            await self.send(text_data=json.dumps({
+                'type': 'reconnect',
+                'message': ''
+            }))
+
+
+
 
         if not is_reconnect and len(self.session_ids[self.room_id]) == 2:
             print(f'JOIN SECOND USER: {session_id}')
             await self.join_second_user(room)
+
+
 
         self.cancel_user_removal(self.room_id)
 
@@ -88,8 +98,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         Disconnect from chat.
         """
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-
-        self.schedule_user_removal(self.room_id)
+        print('DISCONNECT')
+        if self.active_users_count.get(self.room_id, 0) <= 1:
+            await self.delete_chat_room(self.room_id)
+        else:
+            self.schedule_user_removal(self.room_id)
 
     def schedule_user_removal(self, room_id):
         """Starts timer if user didn't reconnect."""
@@ -111,8 +124,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if self.active_users_count[room_id] == 1:
                 await self.end_chat_on_left(room_id)
                 await self.delete_chat_room(room_id)
-                del self.active_users_count[room_id]
-                del self.session_ids[room_id]
 
                 print(f'ROOM {room_id} DELETED')
                 print(f'SESSIONS: {self.session_ids}')
@@ -142,11 +153,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         :param room_id:
         :return:
         """
+        self.deletion_timers.pop(room_id, None)
+        self.active_users_count.pop(room_id, None)
+        self.session_ids.pop(room_id, None)
         try:
             room = ChatRoom.objects.get(id=room_id)
             room.delete()
         except DoesNotExist:
             pass
+        print(f'ROOM {room_id} DELETED')
+        print(f'SESSIONS: {self.session_ids}')
+        print(f'USERS: {self.active_users_count}')
 
     async def receive(self, text_data):
         """
@@ -168,6 +185,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'room_id': room_id
                 }
             )
+            print('DELETING CHAT')
+            await self.delete_chat_room(room_id)
+
         else:
             await self.save_message(room_id, message, session_id)
 
@@ -197,6 +217,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'room_id': room_id
 
         }))
+
 
     @sync_to_async
     def save_message(self, room_id, message, session_id):

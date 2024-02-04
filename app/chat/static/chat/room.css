@@ -1,0 +1,147 @@
+#chat-container {
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    margin: auto;
+
+}
+
+#message-container {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+.message {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+.mine {
+    background-color: #dcf8c6;
+    margin-left: auto;
+}
+
+.theirs {
+    background-color: #eaeaea;
+}
+
+#loader {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    color: #000;
+}
+
+#waiting-message {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    color: #000;
+}
+
+.chat-end-status {
+    background-color: #333;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: sticky;
+    bottom: 50px;
+    z-index: 2;
+}
+
+.chat-end-message {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.chat-end-complaint {
+    margin-bottom: 20px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.chat-end-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.chat-end-button {
+    border: none;
+    color: white;
+    padding: 10px 30px;
+    cursor: pointer;
+    border-radius: 20px;
+    outline: none;
+    transition: background-color 0.3s;
+}
+
+.modify-params {
+    background-color: transparent;
+    border: 2px solid #00aaff;
+}
+
+.modify-params:hover {
+    background-color: #00aaff;
+}
+
+.start-new {
+    background-color: transparent;
+    border: 2px solid #00ff00;
+}
+
+.start-new:hover {
+    background-color: #00ff00;
+}
+
+
+#input-container {
+    /*position: fixed;*/
+    /*bottom: 0;*/
+    /*left: 0;*/
+    /*right: 0;*/
+    display: flex;
+    align-items: center;
+    background-color: #2a2a2a;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+#message-input {
+    flex-grow: 1;
+    margin-right: 10px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 20px;
+    background-color: #404040;
+    color: white;
+}
+
+#send-button {
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 2px solid #4CAF50;
+    background-color: transparent;
+    color: #4CAF50;
+    cursor: pointer;
+    outline: none;
+}
+#send-button:hover {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#send-button.disabled {
+    cursor: default;
+    opacity: 0.5;
+}
