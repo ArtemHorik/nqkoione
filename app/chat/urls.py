@@ -10,5 +10,6 @@ urlpatterns = [
 
     path('api/check_room_status/<int:room_id>/', views.check_room_status, name='check_room_status'),
     path('api/join_room/<int:room_id>/', views.join_room, name='join_room'),
-    path('api/end_chat/', views.end_chat, name='end_chat')
+    path('api/end_chat/', views.end_chat, name='end_chat'),
+    path('api/get_users_in_chat/', views.get_users_in_chat, name='get_users_in_chat')
 ]

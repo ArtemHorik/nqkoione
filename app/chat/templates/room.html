@@ -10,27 +10,28 @@
 <div id="chat-container">
 
     <div id="message-container">
-        
+
     </div>
-    
-    
-    
+
+
     <div id="input-container">
         <input type="text" id="message-input" placeholder="Въведете съобщение...">
         <button id="send-button">Изпрати</button>
     </div>
-    
+
 </div>
 
-<div id="waiting-message" style="display:none;">
+<div id="waiting-message" style="display:none; align-items: center; justify-content: center; flex-direction: column;">
+    <div class="loader"></div>
     Търсим свободен събеседник...
+    <button id="cancel-search-btn" class="cancel-search-btn" onclick="stopSearch()">Отменить поиск</button>
 </div>
 
-<div id="loader" style="display: none;">Загрузка...</div>
+<div id="loader" style="display: none;">
+    Зареждане...
+</div>
 
 <button id="end-chat-btn" onclick="endChat()">Приключи чата</button>
-<button id="change-settings-btn" onclick="changeSettings()" style="display:none;">Промени филтрите</button>
-<button id="start-new-chat-btn" onclick="startNewChat()" style="display:none;">Нов чат</button>
 {% csrf_token %}
 
 <script> // CSRFTOKEN
@@ -67,10 +68,8 @@ function endChat() {
     addChatEndedBanner();
     chatActive = false;
     document.getElementById('end-chat-btn').style.display = 'none';
-    document.getElementById('change-settings-btn').style.display = 'block';
-    document.getElementById('start-new-chat-btn').style.display = 'block';
 
-    fetch('/api/end_chat/', {
+    fetch('/chat/api/end_chat/', {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
@@ -80,15 +79,49 @@ function endChat() {
         console.log('Chat ended')
     }).catch(error => console.error('Chat end error: ', error));
     sendEndChatSignal();
-    
+
+
 }
 
 function changeSettings() {
     window.location.href = '/chat';
 }
 
+function stopSearch() {
+    endChat();
+    window.location.href = '/chat';
+}
+
 function startNewChat() {
-    window.location.href = '/start_chat';
+    fetch('/chat/search', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            my_gender: '{{filter_data.my_gender}}',
+            search_gender: '{{filter_data.search_gender}}',
+            topic: '{{filter_data.topic}}'
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+                if (data.status === 'success') {
+                    console.log('Room ID:', data.room_id);
+                    handleSearchResponse(data);
+                } else {
+                    console.error('Error:', data.message);
+                }
+            }
+        );
+
+    function handleSearchResponse(data) {
+        if (data.room_id.length > 0) {
+            window.location.href = '/chat/room/' + data.room_id;
+        } else {
+            alert("No room was found");
+        }
+    }
 }
 
 // SOCKET
@@ -114,7 +147,7 @@ function connect() {
                 addChatEndedBanner();
                 chatActive = false;
                 {#alert('CHAT ENDED');#}
-                
+
                 return;
             } else if (data.type === 'second_user_joined') {
                 onSecondUserJoined();
@@ -125,7 +158,9 @@ function connect() {
                 updateWaitingStatus(false);
                 chatActive = true;
             } else {
-                displayMessage(data);
+                if (data.session_id !== '{{ session_key }}') {
+                    displayMessage(data);
+                }
             }
             console.log('DATA')
             console.log(data)
@@ -164,7 +199,7 @@ function onSecondUserJoined() {
 function updateWaitingStatus(isWaiting) {
     const waitingMessage = document.getElementById('waiting-message');
     if (isWaiting) {
-        waitingMessage.style.display = 'block';
+        waitingMessage.style.display = 'flex';
     } else {
         waitingMessage.style.display = 'none';
     }
@@ -200,12 +235,16 @@ function isMyMessage(sessionId) {
 sendMessageButton.onclick = function (e) {
     if (chatActive) {
         const message = inputElement.value;
-        socket.send(JSON.stringify({
-            'message': message,
-            'room_id': '{{ room_id }}',
-            'session_id': '{{session_key}}'
-        }));
+        displayMessage({message: message, session_id: '{{session_key}}'});
+        if (message) {
+            socket.send(JSON.stringify({
+                'message': message,
+                'room_id': '{{ room_id }}',
+                'session_id': '{{session_key}}'
+            }));
+        }
         inputElement.value = '';
+        document.getElementById('message-input').focus();
         roomContainer.scrollTop = roomContainer.scrollHeight;
     }
 
@@ -228,7 +267,11 @@ function displayMessage(data) {
     }
 
     messageElement.textContent = data.message;
-    roomContainer.appendChild(messageElement);
+    if (roomContainer.firstChild) {
+        roomContainer.insertBefore(messageElement, roomContainer.firstChild);
+    } else {
+        roomContainer.appendChild(messageElement);
+    }
 
     roomContainer.scrollTop = roomContainer.scrollHeight;
 }
@@ -241,7 +284,9 @@ function loadMessages() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                displayMessages(data.messages);
+                data.messages.forEach(msg => {
+                    displayMessage(msg)
+                });
                 if (data.second_user_joined) {
                     updateWaitingStatus(false);
                 } else {
@@ -251,26 +296,6 @@ function loadMessages() {
                 console.error('Error while loading messages:', data.message);
             }
         });
-}
-
-function displayMessages(messages) {
-    const messageContainer = document.getElementById('message-container');
-    {#messageContainer.innerHTML = '';#}
-
-    messages.forEach(msg => {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message');
-        messageElement.textContent = msg.content;
-
-        if (isMyMessage(msg.session_id)) {
-            messageElement.classList.add('mine');
-        } else {
-            messageElement.classList.add('theirs');
-        }
-
-        messageContainer.appendChild(messageElement);
-    });
-    roomContainer.scrollTop = roomContainer.scrollHeight;
 }
 
 function addChatEndedBanner() {

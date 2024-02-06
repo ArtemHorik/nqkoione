@@ -7,20 +7,24 @@
         body {
             font-family: Arial, sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             background-color: #f4f4f4;
         }
+
         #chat-container {
             background-color: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         .button-group {
             margin-bottom: 20px;
         }
+
         button {
             padding: 10px;
             margin-right: 5px;
@@ -29,56 +33,69 @@
             background-color: #f4f4f4;
             cursor: pointer;
         }
+
         button.active {
             background-color: #4CAF50;
             color: white;
         }
+
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
+
         #start-chat-button {
             background-color: #4CAF50;
             color: white;
             border: none;
         }
+
         #start-chat-button:hover {
             background-color: #45a049;
         }
     </style>
+    <script src="https://unpkg.com/htmx.org"></script>
 </head>
 <body>
-    <div id="chat-container">
-        <form id="chat-form">
-            <div class="button-group" id="my_gender">
-                <label>Вашия пол:</label>
-                <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'male')">Мъжки</button>
-                <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'female')">Женски</button>
-                <button type="button" class="gender-btn active" onclick="selectGender('my_gender', 'not-specified')">Някой</button>
-            </div>
+<div id="chat-container">
+    <form id="chat-form">
+        <div class="button-group" id="my_gender">
+            <label>Вашия пол:</label>
+            <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'male')">Мъжки</button>
+            <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'female')">Женски</button>
+            <button type="button" class="gender-btn active" onclick="selectGender('my_gender', 'not-specified')">Някой
+            </button>
+        </div>
 
-            <div class="button-group" id="search_gender">
-                <label>Пол на събеседника:</label>
-                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'male')" disabled>Мъжски</button>
-                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'female')" disabled>Женски</button>
-                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'not-specified')" disabled>Някой</button>
-            </div>
+        <div class="button-group" id="search_gender">
+            <label>Пол на събеседника:</label>
+            <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'male')" disabled>Мъжски
+            </button>
+            <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'female')" disabled>Женски
+            </button>
+            <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'not-specified')" disabled>
+                Някой
+            </button>
+        </div>
 
-            <div class="button-group" id="chat-topic">
-                <label>Тема:</label>
-                <button type="button" class="topic-btn active" onclick="selectTopic('chat')">Общуване</button>
-                <button type="button" class="topic-btn" onclick="selectTopic('flirt')">Флирт 18+</button>
-            </div>
+        <div class="button-group" id="chat-topic">
+            <label>Тема:</label>
+            <button type="button" class="topic-btn active" onclick="selectTopic('chat')">Общуване</button>
+            <button type="button" class="topic-btn" onclick="selectTopic('flirt')">Флирт 18+</button>
+        </div>
 
-            <button type="button" id="start-chat-button" onclick="startChat()">Започни чат</button>
+        <button type="button" id="start-chat-button" onclick="startChat()">Започни чат</button>
         {% csrf_token %}
-        </form>
-    </div>
+    </form>
+</div>
+<div class="" style="font-size: 16px; margin: 20px" 
+     hx-get="{% url 'get_users_in_chat' %}" hx-trigger="every 5s">
+    Чатове онлайн: <span hx-target="this">{{ users_in_chat }}</span><br>
+</div>
 
-    
-    <script>
-        
-        function getCookie(name) {
+<script>
+
+    function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
@@ -95,76 +112,78 @@
     }
 
     const csrftoken = getCookie('csrftoken');
-    </script>
-    
-    <script>
-        let selectedGenders = {
-            'my_gender': 'not-specified',
-            'search_gender': 'not-specified'
-        };
-        let selectedTopic = 'chat';
+</script>
 
-        function selectGender(group, gender) {
-            selectedGenders[group] = gender;
-            document.querySelectorAll('#' + group + ' .gender-btn').forEach(btn => {
+<script>
+    let selectedGenders = {
+        'my_gender': 'not-specified',
+        'search_gender': 'not-specified'
+    };
+    let selectedTopic = 'chat';
+
+    function selectGender(group, gender) {
+        selectedGenders[group] = gender;
+        document.querySelectorAll('#' + group + ' .gender-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        updatePartnerGenderSelection();
+    }
+
+    function selectTopic(topic) {
+        selectedTopic = topic;
+        document.querySelectorAll('#chat-topic .topic-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    function updatePartnerGenderSelection() {
+        const partnerGenderButtons = document.querySelectorAll('#search_gender .gender-btn');
+        if (selectedGenders['my_gender'] === 'not-specified') {
+            partnerGenderButtons.forEach(btn => {
+                btn.disabled = true;
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
-            updatePartnerGenderSelection();
+        } else {
+            partnerGenderButtons.forEach(btn => btn.disabled = false);
         }
+    }
 
-        function selectTopic(topic) {
-            selectedTopic = topic;
-            document.querySelectorAll('#chat-topic .topic-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-        }
-
-        function updatePartnerGenderSelection() {
-            const partnerGenderButtons = document.querySelectorAll('#search_gender .gender-btn');
-            if (selectedGenders['my_gender'] === 'not-specified') {
-                partnerGenderButtons.forEach(btn => {
-                    btn.disabled = true;
-                    btn.classList.remove('active');
-                });
-            } else {
-                partnerGenderButtons.forEach(btn => btn.disabled = false);
-            }
-        }
-
-        function startChat() {
-            fetch('/chat/search', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    my_gender: selectedGenders['my_gender'],
-                    search_gender: selectedGenders['search_gender'],
-                    topic: selectedTopic
-                })
+    function startChat() {
+        fetch('/chat/search', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                my_gender: selectedGenders['my_gender'],
+                search_gender: selectedGenders['search_gender'],
+                topic: selectedTopic
             })
+        })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    console.log('Room ID:', data.room_id);
-                    handleSearchResponse(data);
-                } else {
-                    console.error('Error:', data.message);
+                    if (data.status === 'success') {
+                        console.log('Room ID:', data.room_id);
+                        handleSearchResponse(data);
+                    } else {
+                        console.error('Error:', data.message);
+                    }
                 }
-            });
-        }
-        function handleSearchResponse(data) {
-            if (data.room_id.length > 0) {
-                window.location.href = '/chat/room/' + data.room_id;
-            } else {
-                alert("No room was found");
-            }
-        }
-        
+            );
+    }
 
-        document.addEventListener('DOMContentLoaded', updatePartnerGenderSelection);
-    </script>
+    function handleSearchResponse(data) {
+        if (data.room_id.length > 0) {
+            window.location.href = '/chat/room/' + data.room_id;
+        } else {
+            alert("No room was found");
+        }
+    }
+
+
+    document.addEventListener('DOMContentLoaded', updatePartnerGenderSelection);
+</script>
 </body>
 </html>

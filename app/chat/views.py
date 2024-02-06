@@ -2,7 +2,7 @@ import json
 import random
 
 from bson import ObjectId
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
@@ -18,7 +18,7 @@ def index(request):
     :return:
     """
     request.session.create()
-    return render(request, 'index.html')
+    return render(request, 'index.html', {'users_in_chat': ChatRoom.objects.count()})
 
 
 def room(request, room_id):
@@ -29,13 +29,14 @@ def room(request, room_id):
     :return:
     """
     try:
-        room = ChatRoom.objects.get(id=room_id)
+        chat_room: ChatRoom = ChatRoom.objects.get(id=room_id)
     except DoesNotExist:
         return redirect('index')
 
     return render(request, 'room.html', {
         'room_id': room_id,
-        'session_key': request.session.session_key
+        'session_key': request.session.session_key,
+        'filter_data': request.session['filter_data']
     })
 
 
@@ -47,10 +48,13 @@ def search_or_create_chat_room(request):
     :return:
     """
     try:
+        print(request.body)
         data = json.loads(request.body)
         topic = data.get('topic')
         creator_gender = data.get('my_gender')
         search_gender = data.get('search_gender')
+        request.session['filter_data'] = data
+
         # partner_age = data.get('partner_age', None)
         print(data)
 
@@ -61,6 +65,7 @@ def search_or_create_chat_room(request):
         return JsonResponse({'status': 'success', 'room_id': str(chat_room.id)})
 
     except Exception as e:
+        print(e)
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
@@ -127,7 +132,7 @@ def get_messages(request, room_id):
 
         messages_data = [{
             'session_id': message.session_id,
-            'content': message.content,
+            'message': message.content,
             'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
         } for message in messages]
 
@@ -147,3 +152,7 @@ def end_chat(request):
     except DoesNotExist:
         return JsonResponse({'statur': 'error', 'message': 'Room does not exists'}, status=500)
     return JsonResponse({'status': 'success'})
+
+
+def get_users_in_chat(request):
+    return HttpResponse(f'Чатове онлайн: <span>{ChatRoom.objects.count()}</span>')
