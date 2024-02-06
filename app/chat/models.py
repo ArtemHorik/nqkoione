@@ -11,8 +11,8 @@ class ChatRoom(Document):
 
     topic = StringField(max_length=50, required=True)
 
-    age_range = ListField(StringField(max_length=15), default=list)
-    creator_age = StringField(max_length=15)
+    # age_range = ListField(StringField(max_length=15), default=list)
+    # creator_age = StringField(max_length=15)
     creator_gender = StringField(max_length=15)
     search_gender = StringField(max_length=15)
 
@@ -23,9 +23,11 @@ class ChatRoom(Document):
         'indexes': [
             {'fields': ['room_id'], 'name': 'room_id_index'},
             'topic',
-            'age_range',
-            'creator_age',
+            # 'age_range',
+            # 'creator_age',
             'search_gender',
+            'creator_gender',
+            'second_user_joined'
         ]
     }
 

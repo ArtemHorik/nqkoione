@@ -1,0 +1,84 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #f4f4f4;
+}
+div {
+    display: flex;
+}
+button {
+    padding: 10px;
+    margin-right: 5px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    background-color: #f4f4f4;
+    cursor: pointer;
+}
+
+button.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+#chat-container {
+    background-color: white;
+    padding: 20px;
+    margin: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.button-group {
+    margin-bottom: 20px;
+    display: block;
+}
+
+
+#start-chat-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+}
+
+#start-chat-button:hover {
+    background-color: #45a049;
+}
+
+@media (max-width: 768px) {
+    body {
+        justify-content: flex-start; /* Изменение выравнивания на мобильных устройствах */
+        padding: 20px; /* Добавление отступа для лучшего вида на маленьких экранах */
+    }
+
+    button {
+        padding: 10px;
+        margin-right: 0;
+        margin-bottom: 10px; /* Добавление отступа между кнопками */
+        border-radius: 10px; /* Меньший радиус скругления для мобильных устройств */
+    }
+
+    .button-group {
+        display: flex;
+        flex-direction: column; /* Столбцовое расположение кнопок */
+    }
+
+    #chat-container {
+        margin: 10px;
+        width: auto; /* Автоматическая ширина для адаптации к размеру экрана */
+        box-shadow: none; /* Убрать тень на маленьких устройствах для более чистого вида */
+    }
+}

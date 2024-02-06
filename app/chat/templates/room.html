@@ -3,7 +3,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чат</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{% static 'chat/room.css' %}">
 </head>
 <body>
@@ -18,20 +22,24 @@
         <input type="text" id="message-input" placeholder="Въведете съобщение...">
         <button id="send-button">Изпрати</button>
     </div>
-
+<button id="end-chat-btn" onclick="endChat()">Приключи чата</button>
 </div>
+
+
 
 <div id="waiting-message" style="display:none; align-items: center; justify-content: center; flex-direction: column;">
     <div class="loader"></div>
     Търсим свободен събеседник...
-    <button id="cancel-search-btn" class="cancel-search-btn" onclick="stopSearch()">Отменить поиск</button>
+    <button id="cancel-search-btn" class="btn btn-primary rounded-circle p-3 lh-1" onclick="stopSearch()">
+        <i class="bi bi-x-lg"></i>
+    </button>
 </div>
 
 <div id="loader" style="display: none;">
     Зареждане...
 </div>
 
-<button id="end-chat-btn" onclick="endChat()">Приключи чата</button>
+
 {% csrf_token %}
 
 <script> // CSRFTOKEN
@@ -56,18 +64,10 @@ const csrftoken = getCookie('csrftoken');
 // LOGIC
 let chatActive = false;
 
-chatActive.onchange = function () {
-    if (chatActive) {
-        document.getElementById('end-chat-btn').style.display = 'block';
-    } else {
-    }
-}
-
 
 function endChat() {
     addChatEndedBanner();
     chatActive = false;
-    document.getElementById('end-chat-btn').style.display = 'none';
 
     fetch('/chat/api/end_chat/', {
         method: 'POST',
@@ -132,10 +132,12 @@ const sendMessageButton = document.getElementById('send-button');
 
 let socket;
 let attemptCount = 0;
-const maxAttempts = 5;
+const maxAttempts = 10;
 
 function connect() {
-    socket = new WebSocket('ws://localhost:8000/ws/chat/{{room_id}}/');
+    let ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+    let ws_path = ws_scheme + '://' + window.location.host + "/ws/chat/{{room_id}}/";
+    socket = new WebSocket(ws_path);
 
     socket.onopen = function (e) {
         hideLoader();
@@ -146,6 +148,7 @@ function connect() {
                 console.log(data.message);
                 addChatEndedBanner();
                 chatActive = false;
+                
                 {#alert('CHAT ENDED');#}
 
                 return;
@@ -172,6 +175,7 @@ function connect() {
                 showLoader('Загуба на връзка. Възстановяване...');
                 reconnect();
             }
+            addChatEndedBanner();
             console.error('Chat socket closed unexpectedly');
         };
 
@@ -235,8 +239,8 @@ function isMyMessage(sessionId) {
 sendMessageButton.onclick = function (e) {
     if (chatActive) {
         const message = inputElement.value;
-        displayMessage({message: message, session_id: '{{session_key}}'});
         if (message) {
+            displayMessage({message: message, session_id: '{{session_key}}'});
             socket.send(JSON.stringify({
                 'message': message,
                 'room_id': '{{ room_id }}',
@@ -302,6 +306,7 @@ function addChatEndedBanner() {
     if (!chatActive) {
         return;
     }
+    document.getElementById('end-chat-btn').style.display = 'none';
     const chatContainer = document.getElementById('message-container');
     const bannerHtml = `
         <div class="chat-end-status">
@@ -309,7 +314,7 @@ function addChatEndedBanner() {
     <div class="chat-end-complaint">Flag user</div>
     <div class="chat-end-buttons">
         <button class="chat-end-button modify-params" onclick="changeSettings()">Промяна на филтри</button>
-        <button class="chat-end-button start-new" onclick="startNewChat()">Нов чат</button>
+        <button class="chat-end-button start-new" onclick="this.disabled = true; startNewChat()">Нов чат</button>
     </div>
 </div>
     `;
@@ -320,6 +325,7 @@ function addChatEndedBanner() {
 
 document.addEventListener('DOMContentLoaded', loadMessages);
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
 </body>
 </html>

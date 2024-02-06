@@ -48,7 +48,6 @@ def search_or_create_chat_room(request):
     :return:
     """
     try:
-        print(request.body)
         data = json.loads(request.body)
         topic = data.get('topic')
         creator_gender = data.get('my_gender')
