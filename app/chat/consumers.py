@@ -53,14 +53,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': ''
             }))
 
-
-
-
         if not is_reconnect and len(self.session_ids[self.room_id]) == 2:
             print(f'JOIN SECOND USER: {session_id}')
             await self.join_second_user(room)
-
-
 
         self.cancel_user_removal(self.room_id)
 
@@ -217,7 +212,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'room_id': room_id
 
         }))
-
 
     @sync_to_async
     def save_message(self, room_id, message, session_id):
