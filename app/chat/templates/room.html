@@ -1,331 +1,298 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чат</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{% static 'chat/room.css' %}">
+    <link rel="stylesheet" href="{% static 'chat/css/room.css' %}">
 </head>
+
 <body>
-<div id="chat-container">
+<main>
 
-    <div id="message-container">
+    <div id="chat-container">
 
+        <div id="message-container">
+
+        </div>
+
+
+        <div id="input-container">
+            <input type="text" id="message-input" placeholder="Въведете съобщение...">
+            <button id="send-button">Изпрати</button>
+        </div>
+        <button id="end-chat-btn" onclick="endChat()" style="display: none">Приключи чата</button>
     </div>
 
-
-    <div id="input-container">
-        <input type="text" id="message-input" placeholder="Въведете съобщение...">
-        <button id="send-button">Изпрати</button>
+    <div id="waiting-message"
+         style="display:none; align-items: center; justify-content: center; flex-direction: column;">
+        <div class="loader"></div>
+        Търсим свободен събеседник...
+        <button id="cancel-search-btn" class="btn btn-primary rounded-circle p-3 lh-1" onclick="stopSearch()">
+            <i class="bi bi-x-lg"></i>
+        </button>
     </div>
-<button id="end-chat-btn" onclick="endChat()">Приключи чата</button>
-</div>
 
-
-
-<div id="waiting-message" style="display:none; align-items: center; justify-content: center; flex-direction: column;">
-    <div class="loader"></div>
-    Търсим свободен събеседник...
-    <button id="cancel-search-btn" class="btn btn-primary rounded-circle p-3 lh-1" onclick="stopSearch()">
-        <i class="bi bi-x-lg"></i>
-    </button>
-</div>
-
-<div id="loader" style="display: none;">
-    Зареждане...
-</div>
+    <div id="loader" style="display: none;">
+        Зареждане...
+    </div>
+</main>
 
 
 {% csrf_token %}
+<script src="{% static 'chat/js/script.js' %}"></script>
+<script>
 
-<script> // CSRFTOKEN
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
+    const csrftoken = getCookie('csrftoken');
+
+    // LOGIC
+    let chatActive = false;
+
+
+    function endChat() {
+        addChatEndedBanner();
+        chatActive = false;
+
+        fetch('/chat/api/end_chat/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({room_id: '{{room_id}}'})
+        }).then(response => {
+            console.log('Chat ended')
+        }).catch(error => console.error('Chat end error: ', error));
+        sendEndChatSignal();
+
+
     }
-    return cookieValue;
-}
 
-const csrftoken = getCookie('csrftoken');
-
-// LOGIC
-let chatActive = false;
-
-
-function endChat() {
-    addChatEndedBanner();
-    chatActive = false;
-
-    fetch('/chat/api/end_chat/', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({room_id: '{{room_id}}'})
-    }).then(response => {
-        console.log('Chat ended')
-    }).catch(error => console.error('Chat end error: ', error));
-    sendEndChatSignal();
-
-
-}
-
-function changeSettings() {
-    window.location.href = '/chat';
-}
-
-function stopSearch() {
-    endChat();
-    window.location.href = '/chat';
-}
-
-function startNewChat() {
-    fetch('/chat/search', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrftoken, 'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            my_gender: '{{filter_data.my_gender}}',
-            search_gender: '{{filter_data.search_gender}}',
-            topic: '{{filter_data.topic}}'
-        })
-    })
-        .then(response => response.json())
-        .then(data => {
-                if (data.status === 'success') {
-                    console.log('Room ID:', data.room_id);
-                    handleSearchResponse(data);
-                } else {
-                    console.error('Error:', data.message);
-                }
-            }
-        );
-
-    function handleSearchResponse(data) {
-        if (data.room_id.length > 0) {
-            window.location.href = '/chat/room/' + data.room_id;
-        } else {
-            alert("No room was found");
-        }
+    function changeSettings() {
+        window.location.href = '/chat';
     }
-}
 
-// SOCKET
+    function stopSearch() {
+        window.location.href = '/chat';
+        endChat();
+    }
 
-const roomContainer = document.getElementById('message-container');
-const inputElement = document.getElementById('message-input');
-const sendMessageButton = document.getElementById('send-button');
+    function onNewChat() {
+        startNewChat('{{filter_data.my_gender}}', '{{filter_data.search_gender}}', '{{filter_data.topic}}');
+    }
 
-let socket;
-let attemptCount = 0;
-const maxAttempts = 10;
 
-function connect() {
-    let ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-    let ws_path = ws_scheme + '://' + window.location.host + "/ws/chat/{{room_id}}/";
-    socket = new WebSocket(ws_path);
+    // SOCKET
 
-    socket.onopen = function (e) {
-        hideLoader();
+    const roomContainer = document.getElementById('message-container');
+    const inputElement = document.getElementById('message-input');
+    const sendMessageButton = document.getElementById('send-button');
 
-        socket.onmessage = function (e) {
-            const data = JSON.parse(e.data);
-            if (data.type === 'end_chat') {
-                console.log(data.message);
-                addChatEndedBanner();
-                chatActive = false;
-                
-                {#alert('CHAT ENDED');#}
+    let socket;
+    let attemptCount = 0;
+    const maxAttempts = 10;
 
-                return;
-            } else if (data.type === 'second_user_joined') {
-                onSecondUserJoined();
-                displayMessage(data);
-                chatActive = true;
+    function connect() {
+        let ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+        let ws_path = ws_scheme + '://' + window.location.host + "/ws/chat/{{room_id}}/";
+        socket = new WebSocket(ws_path);
 
-            } else if (data.type === 'reconnect') {
-                updateWaitingStatus(false);
-                chatActive = true;
-            } else {
-                if (data.session_id !== '{{ session_key }}') {
+        socket.onopen = function (e) {
+            hideLoader();
+
+            socket.onmessage = function (e) {
+                const data = JSON.parse(e.data);
+                if (data.type === 'end_chat') {
+                    console.log(data.message);
+                    addChatEndedBanner();
+                    chatActive = false;
+
+                    {#alert('CHAT ENDED');#}
+
+                    return;
+                } else if (data.type === 'second_user_joined') {
+                    onSecondUserJoined();
                     displayMessage(data);
+                    document.getElementById('end-chat-btn').style.display = 'block';
+                    chatActive = true;
+
+                } else if (data.type === 'reconnect') {
+                    updateWaitingStatus(false);
+                    document.getElementById('end-chat-btn').style.display = 'block';
+                    chatActive = true;
+                } else {
+                    if (data.session_id !== '{{ session_key }}') {
+                        displayMessage(data);
+                    }
                 }
-            }
-            console.log('DATA')
-            console.log(data)
+                console.log('DATA')
+                console.log(data)
 
+            };
+
+            socket.onclose = function (e) {
+                if (!event.wasClean && attemptCount < maxAttempts) {
+                    showLoader('Загуба на връзка. Възстановяване...');
+                    reconnect();
+                }
+                addChatEndedBanner();
+                console.error('Chat socket closed unexpectedly');
+            };
+
+            socket.onerror = function (error) {
+                alert('Възникна грешка. Чат не може да се продължи.');
+            };
         };
-
-        socket.onclose = function (e) {
-            if (!event.wasClean && attemptCount < maxAttempts) {
-                showLoader('Загуба на връзка. Възстановяване...');
-                reconnect();
-            }
-            addChatEndedBanner();
-            console.error('Chat socket closed unexpectedly');
-        };
-
-        socket.onerror = function (error) {
-            alert('Възникна грешка. Чат не може да се продължи.');
-        };
-    };
-}
-
-function sendEndChatSignal() {
-    chatActive = false;
-    const message = {
-        action: 'end_chat',
-        room_id: '{{ room_id }}',
-        session_id: '{{session_key}}',
-    };
-    socket.send(JSON.stringify(message));
-
-}
-
-function onSecondUserJoined() {
-    updateWaitingStatus(false);
-}
-
-function updateWaitingStatus(isWaiting) {
-    const waitingMessage = document.getElementById('waiting-message');
-    if (isWaiting) {
-        waitingMessage.style.display = 'flex';
-    } else {
-        waitingMessage.style.display = 'none';
     }
-}
 
-window.onload = function () {
-    connect();
-};
+    function sendEndChatSignal() {
+        chatActive = false;
+        const message = {
+            action: 'end_chat',
+            room_id: '{{ room_id }}',
+            session_id: '{{session_key}}',
+        };
+        socket.send(JSON.stringify(message));
 
-function reconnect() {
-    attemptCount++;
-    setTimeout(function () {
-        connect();
-    }, 3000);
-}
+    }
 
-function showLoader(message) {
-    const loader = document.getElementById('loader');
-    loader.textContent = message;
-    loader.style.display = 'block';
-}
+    function onSecondUserJoined() {
+        updateWaitingStatus(false);
+    }
 
-function hideLoader() {
-    const loader = document.getElementById('loader');
-    loader.style.display = 'none';
-}
-
-
-function isMyMessage(sessionId) {
-    return '{{session_key}}' === sessionId;
-}
-
-sendMessageButton.onclick = function (e) {
-    if (chatActive) {
-        const message = inputElement.value;
-        if (message) {
-            displayMessage({message: message, session_id: '{{session_key}}'});
-            socket.send(JSON.stringify({
-                'message': message,
-                'room_id': '{{ room_id }}',
-                'session_id': '{{session_key}}'
-            }));
+    function updateWaitingStatus(isWaiting) {
+        const waitingMessage = document.getElementById('waiting-message');
+        if (isWaiting) {
+            waitingMessage.style.display = 'flex';
+        } else {
+            waitingMessage.style.display = 'none';
         }
-        inputElement.value = '';
-        document.getElementById('message-input').focus();
+    }
+
+    window.onload = function () {
+        connect();
+    };
+
+    function reconnect() {
+        attemptCount++;
+        setTimeout(function () {
+            connect();
+        }, 3000);
+    }
+
+    function showLoader(message) {
+        const loader = document.getElementById('loader');
+        loader.textContent = message;
+        loader.style.display = 'block';
+    }
+
+    function hideLoader() {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'none';
+    }
+
+
+    function isMyMessage(sessionId) {
+        return '{{session_key}}' === sessionId;
+    }
+
+    sendMessageButton.onclick = function (e) {
+        if (chatActive) {
+            const message = inputElement.value;
+            if (message) {
+                displayMessage({message: message, session_id: '{{session_key}}'});
+                socket.send(JSON.stringify({
+                    'message': message,
+                    'room_id': '{{ room_id }}',
+                    'session_id': '{{session_key}}'
+                }));
+            }
+            inputElement.value = '';
+            document.getElementById('message-input').focus();
+            roomContainer.scrollTop = roomContainer.scrollHeight;
+        }
+
+    };
+
+    inputElement.onkeyup = function (e) {
+        if (e.keyCode === 13) {  // enter, return
+            sendMessageButton.click();
+        }
+    };
+
+    function displayMessage(data) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+
+        if (isMyMessage(data.session_id)) {
+            messageElement.classList.add('mine');
+        } else {
+            messageElement.classList.add('theirs');
+        }
+
+        messageElement.textContent = data.message;
+        if (roomContainer.firstChild) {
+            roomContainer.insertBefore(messageElement, roomContainer.firstChild);
+        } else {
+            roomContainer.appendChild(messageElement);
+        }
+
         roomContainer.scrollTop = roomContainer.scrollHeight;
     }
 
-};
-
-inputElement.onkeyup = function (e) {
-    if (e.keyCode === 13) {  // enter, return
-        sendMessageButton.click();
-    }
-};
-
-function displayMessage(data) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message');
-
-    if (isMyMessage(data.session_id)) {
-        messageElement.classList.add('mine');
-    } else {
-        messageElement.classList.add('theirs');
-    }
-
-    messageElement.textContent = data.message;
-    if (roomContainer.firstChild) {
-        roomContainer.insertBefore(messageElement, roomContainer.firstChild);
-    } else {
-        roomContainer.appendChild(messageElement);
-    }
-
-    roomContainer.scrollTop = roomContainer.scrollHeight;
-}
-
-function loadMessages() {
-    fetch(`/chat/get_messages/{{room_id}}/`, {
-        method: 'POST',
-        headers: {'X-CSRFToken': csrftoken}
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                data.messages.forEach(msg => {
-                    displayMessage(msg)
-                });
-                if (data.second_user_joined) {
-                    updateWaitingStatus(false);
+    function loadMessages() {
+        fetch(`/chat/get_messages/{{room_id}}/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrftoken}
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    data.messages.forEach(msg => {
+                        displayMessage(msg)
+                    });
+                    if (data.second_user_joined) {
+                        updateWaitingStatus(false);
+                    } else {
+                        updateWaitingStatus(true);
+                    }
                 } else {
-                    updateWaitingStatus(true);
+                    console.error('Error while loading messages:', data.message);
                 }
-            } else {
-                console.error('Error while loading messages:', data.message);
-            }
-        });
-}
-
-function addChatEndedBanner() {
-    if (!chatActive) {
-        return;
+            });
     }
-    document.getElementById('end-chat-btn').style.display = 'none';
-    const chatContainer = document.getElementById('message-container');
-    const bannerHtml = `
+
+    function addChatEndedBanner() {
+        if (!chatActive) {
+            return;
+        }
+        document.getElementById('end-chat-btn').style.display = 'none';
+        const chatContainer = document.getElementById('message-container');
+        const bannerHtml = `
         <div class="chat-end-status">
     <div class="chat-end-message">Чатът е завършен.</div>
     <div class="chat-end-complaint">Flag user</div>
     <div class="chat-end-buttons">
         <button class="chat-end-button modify-params" onclick="changeSettings()">Промяна на филтри</button>
-        <button class="chat-end-button start-new" onclick="this.disabled = true; startNewChat()">Нов чат</button>
+        <button class="chat-end-button start-new" onclick="this.disabled = true; onNewChat()">Нов чат</button>
     </div>
 </div>
     `;
 
-    chatContainer.insertAdjacentHTML('afterend', bannerHtml);
-}
+        chatContainer.insertAdjacentHTML('afterend', bannerHtml);
+    }
 
 
-document.addEventListener('DOMContentLoaded', loadMessages);
+    document.addEventListener('DOMContentLoaded', loadMessages);
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
 
 </body>
 </html>
