@@ -1,4 +1,7 @@
 #ON WORK
 
-NqkoiOne - Anonimous chat with random people ![image](https://github.com/ArtemHorik/nqkoione/assets/98229092/7502f733-9c8c-454b-98bc-3943508be749)
+NqkoiOne - Anonimous chat with random people
+
+![NqkoiOneGif](https://github.com/ArtemHorik/nqkoione/assets/98229092/23d78c7e-d621-45b0-87da-5026286f83f2)
+
 
