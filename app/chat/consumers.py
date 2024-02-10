@@ -4,7 +4,7 @@ import json
 from asgiref.sync import sync_to_async
 from bson import ObjectId
 from channels.generic.websocket import AsyncWebsocketConsumer
-from mongoengine import DoesNotExist, ValidationError
+from mongoengine import DoesNotExist
 
 from chat.models import Message, ChatRoom
 
@@ -19,7 +19,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         """
-        Called when the websocket is handshaking as part of the connection process.
+        Called when the websocket is handshaking
         """
         # Extract room name from the URL route
         self.room_id = self.scope['url_route']['kwargs']['room_id']
@@ -53,14 +53,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': ''
             }))
 
-
-
-
         if not is_reconnect and len(self.session_ids[self.room_id]) == 2:
             print(f'JOIN SECOND USER: {session_id}')
             await self.join_second_user(room)
-
-
 
         self.cancel_user_removal(self.room_id)
 
@@ -124,10 +119,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if self.active_users_count[room_id] == 1:
                 await self.end_chat_on_left(room_id)
                 await self.delete_chat_room(room_id)
-
-                print(f'ROOM {room_id} DELETED')
-                print(f'SESSIONS: {self.session_ids}')
-                print(f'USERS: {self.active_users_count}')
 
     async def end_chat_on_left(self, room_id):
         """
@@ -217,7 +208,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'room_id': room_id
 
         }))
-
 
     @sync_to_async
     def save_message(self, room_id, message, session_id):

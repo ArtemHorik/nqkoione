@@ -76,12 +76,15 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 from mongoengine import connect
-from decouple import config
+from decouple import config  # SPECIFY YOUR VARIABLES IN .env FILE
+
+MONGODB_URL = config('MONGODB_URL')
+REDIS_URL = config('REDIS_URL')
 
 if 'test' in sys.argv:
-    connect('test', host=config('MONGODB_URL'))
+    connect('test', host=MONGODB_URL)
 else:
-    connect('nqkoione', host=config('MONGODB_URL'))
+    connect('nqkoione', host=MONGODB_URL)
 
 DATABASES = {
     'default': {
@@ -94,7 +97,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [config('REDIS_URL')],
+            "hosts": [REDIS_URL],
             "symmetric_encryption_keys": [SECRET_KEY],
         },
     },
