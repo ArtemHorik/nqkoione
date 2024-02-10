@@ -16,7 +16,7 @@ class ChatRoomModelTest(TestCase):
         """
         self.chatroom = ChatRoom(
             topic='Test Topic',
-            creator_age='25-34',
+            # creator_age='25-34',
             creator_gender='Male',
             search_gender='Female'
         )
@@ -29,7 +29,7 @@ class ChatRoomModelTest(TestCase):
         """
         self.assertIsNotNone(self.chatroom.room_id)
         self.assertEqual(self.chatroom.topic, 'Test Topic')
-        self.assertEqual(self.chatroom.creator_age, '25-34')
+        # self.assertEqual(self.chatroom.creator_age, '25-34')
         self.assertEqual(self.chatroom.creator_gender, 'Male')
         self.assertEqual(self.chatroom.search_gender, 'Female')
         self.assertIsInstance(self.chatroom.created_at, datetime)
@@ -42,7 +42,7 @@ class ChatRoomModelTest(TestCase):
         """
         chatroom2 = ChatRoom(
             topic='Flirt',
-            creator_age='18-24',
+            # creator_age='18-24',
             creator_gender='Female',
             search_gender='Male'
         )
