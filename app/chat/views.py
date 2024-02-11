@@ -4,7 +4,6 @@ import random
 from bson import ObjectId
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from mongoengine import DoesNotExist, ValidationError
 

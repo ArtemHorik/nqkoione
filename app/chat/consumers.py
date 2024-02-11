@@ -63,8 +63,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.active_users_count[self.room_id] = self.active_users_count.get(self.room_id, 0) + 1
 
     async def join_second_user(self, room):
-        room.second_user_joined = True
-        await sync_to_async(room.save)()
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -72,6 +70,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': 'Second user joined'
             }
         )
+        room.second_user_joined = True
+        await sync_to_async(room.save)()
 
     async def second_user_joined_event(self, event):
         message = event['message']
@@ -179,6 +179,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             print('DELETING CHAT')
             await self.delete_chat_room(room_id)
 
+        elif action == 'typing':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'typing_message',
+                    'message': message,
+                    'sender_channel_name': self.channel_name
+                }
+            )
+
         else:
             await self.save_message(room_id, message, session_id)
 
@@ -192,6 +202,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'room_id': room_id
                 }
             )
+
+    async def typing_message(self, event):
+        """
+        Sends a user typing event message
+        :param event:
+        :return:
+        """
+        if event['sender_channel_name'] != self.channel_name:  # Don't send to ourselves
+            await self.send(text_data=json.dumps({
+                'type': 'typing',
+                'message': event['message']
+            }))
 
     async def end_chat(self, event):
         """

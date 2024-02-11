@@ -16,12 +16,14 @@
 <body>
 <main>
 
-    <div id="chat-container">
-
-        <div id="message-container">
-
+    <div id="chat-container" class="col-lg-12">
+        <div class="message-box" id="message-box">
+            <div id="message-container">
+            </div>
+            <span class="typing" id="typing-message" style="display: none">Typing...</span>
         </div>
-
+        
+        
 
         <div id="input-container">
             <input type="text" id="message-input" placeholder="Въведете съобщение...">
@@ -107,32 +109,38 @@
 
             socket.onmessage = function (e) {
                 const data = JSON.parse(e.data);
-                if (data.type === 'end_chat') {
-                    console.log(data.message);
-                    addChatEndedBanner();
-                    chatActive = false;
-
-                    {#alert('CHAT ENDED');#}
-
-                    return;
-                } else if (data.type === 'second_user_joined') {
-                    onSecondUserJoined();
-                    displayMessage(data);
-                    document.getElementById('end-chat-btn').style.display = 'block';
-                    chatActive = true;
-
-                } else if (data.type === 'reconnect') {
-                    updateWaitingStatus(false);
-                    document.getElementById('end-chat-btn').style.display = 'block';
-                    chatActive = true;
-                } else {
-                    if (data.session_id !== '{{ session_key }}') {
-                        displayMessage(data);
-                    }
-                }
                 console.log('DATA')
                 console.log(data)
 
+                switch (data.type) {
+                    case 'end_chat':
+                        addChatEndedBanner();
+                        chatActive = false;
+                        return;
+                    case 'second_user_joined':
+                        onSecondUserJoined();
+                        displayMessage(data);
+                        document.getElementById('end-chat-btn').style.display = 'block';
+                        chatActive = true;
+                        break;
+                    case 'reconnect':
+                        updateWaitingStatus(false);
+                        document.getElementById('end-chat-btn').style.display = 'block';
+                        chatActive = true;
+                        break;
+                    case 'typing':
+                        if (data.message === 'typing...') {
+                            document.getElementById('typing-message').style.display = 'block';
+                        } else {
+                            document.getElementById('typing-message').style.display = 'none';
+                        }
+                        break;
+                    default:
+                        if (data.session_id !== '{{ session_key }}') {
+                        displayMessage(data);
+                        document.getElementById('typing-message').style.display = 'none';
+                    }
+                }
             };
 
             socket.onclose = function (e) {
@@ -272,7 +280,7 @@
             return;
         }
         document.getElementById('end-chat-btn').style.display = 'none';
-        const chatContainer = document.getElementById('message-container');
+        const chatContainer = document.getElementById('message-box');
         const bannerHtml = `
         <div class="chat-end-status">
     <div class="chat-end-message">Чатът е завършен.</div>
@@ -283,12 +291,40 @@
     </div>
 </div>
     `;
-
+        document.getElementById('message-box').style.height = '281px';
         chatContainer.insertAdjacentHTML('afterend', bannerHtml);
     }
 
-
     document.addEventListener('DOMContentLoaded', loadMessages);
+
+    
+    let typingTimer;
+    let isTyping = false;
+    const typingInterval = 1500;
+    
+
+    document.getElementById('message-input').addEventListener('input', () => {
+        if (!chatActive) {
+            return;
+        }
+        clearTimeout(typingTimer);
+        if (!isTyping) {
+            socket.send(JSON.stringify({action: 'typing', type: 'typing', message: 'typing...'}));
+            isTyping = true;
+        }
+        typingTimer = setTimeout(() => {
+            socket.send(JSON.stringify({action: 'typing', message: 'stopped_typing'}));
+            isTyping = false;
+        }, typingInterval);
+    });
+    
+    
+    function changeTypingIndicator(isTyping) {
+        document.getElementById('typing-message').style.display = 'block';
+    }
+    
+
+
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
