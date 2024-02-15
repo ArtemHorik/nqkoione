@@ -1,0 +1,101 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-02-15 19:39+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: .\chat\templates\index.html:24
+msgid "Your gender:"
+msgstr "Ваш пол:"
+
+#: .\chat\templates\index.html:26 .\chat\templates\index.html:37
+msgid "Male"
+msgstr "Мужской"
+
+#: .\chat\templates\index.html:28 .\chat\templates\index.html:40
+msgid "Female"
+msgstr "Женский"
+
+#: .\chat\templates\index.html:30 .\chat\templates\index.html:44
+msgid "Nqkoi"
+msgstr "Аноним"
+
+#: .\chat\templates\index.html:35
+msgid "Partner gender"
+msgstr "Пол собеседника"
+
+#: .\chat\templates\index.html:49
+msgid "Topic:"
+msgstr "Тема:"
+
+#: .\chat\templates\index.html:50 .\chat\templates\room.html:9
+msgid "Chat"
+msgstr "Общение"
+
+#: .\chat\templates\index.html:51
+msgid "Flirt"
+msgstr "Флирт"
+
+#: .\chat\templates\index.html:55
+msgid "Start chat"
+msgstr "Начать поиск"
+
+#: .\chat\templates\index.html:63
+msgid "Chats online: "
+msgstr "Чаты онлайн: "
+
+#: .\chat\templates\room.html:24
+msgid "Typing..."
+msgstr "Печатает..."
+
+#: .\chat\templates\room.html:30
+msgid "Enter your message..."
+msgstr "Введите сообщение..."
+
+#: .\chat\templates\room.html:31
+msgid "Send"
+msgstr "Отправить"
+
+#: .\chat\templates\room.html:33
+msgid "End chat"
+msgstr "Завершить чат"
+
+#: .\chat\templates\room.html:39
+msgid "Searching for chat..."
+msgstr "Поиск собеседника..."
+
+#: .\chat\templates\room.html:46
+msgid "Loading..."
+msgstr "Загрузка..."
+
+#: .\chat\templates\room.html:149
+msgid "Connection lost. Recovering..."
+msgstr "Связь потеряна. Восстановление..."
+
+#: .\chat\templates\room.html:287
+msgid "Chat ended."
+msgstr "Чат завершен."
+
+#: .\chat\templates\room.html:290
+msgid "Change filters"
+msgstr "Изменить фильтры"
+
+#: .\chat\templates\room.html:291
+msgid "New chat"
+msgstr "Новый чат"

@@ -1,14 +1,16 @@
+{% load i18n %}
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NqkoiOne - Анонимен Чат</title>
-    <meta name="description" content="NqkoiOne - Анонимен чат">
-    <meta property="og:description" content="NqkoiOne - Анонимен чат">
+    <title>NqkoiOne | Anonymous Chat</title>
+    <meta name="description" content="NqkoiOne - Anonymous Chat">
+    <meta property="og:description" content="NqkoiOne - Anonymous Chat">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'chat/css/index.css' %}">
     <script src="https://unpkg.com/htmx.org"></script>
 </head>
@@ -17,43 +19,51 @@
 <main>
 
     <div id="chat-container">
-    <form id="chat-form">
-        <div class="button-group" id="my_gender">
-            <label>Вашия пол:</label>
-            <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'male')">Мъжки</button>
-            <button type="button" class="gender-btn" onclick="selectGender('my_gender', 'female')">Женски</button>
-            <button type="button" class="gender-btn active" onclick="selectGender('my_gender', 'not-specified')">Някой
-            </button>
-        </div>
+        <form id="chat-form">
+            <div class="button-group" id="my_gender">
+                <label>{% trans 'Your gender:' %}</label>
+                <button type="button" class="gender-btn"
+                        onclick="selectGender('my_gender', 'male')">{% trans 'Male' %}</button>
+                <button type="button" class="gender-btn"
+                        onclick="selectGender('my_gender', 'female')">{% trans 'Female' %}</button>
+                <button type="button" class="gender-btn active"
+                        onclick="selectGender('my_gender', 'not-specified')">{% trans 'Nqkoi' %}
+                </button>
+            </div>
 
-        <div class="button-group" id="search_gender">
-            <label>Пол на събеседника:</label>
-            <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'male')" disabled>Мъжски
-            </button>
-            <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'female')" disabled>Женски
-            </button>
-            <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'not-specified')" disabled>
-                Някой
-            </button>
-        </div>
+            <div class="button-group" id="search_gender">
+                <label>{% trans "Partner gender" %}</label>
+                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'male')"
+                        disabled>{% trans 'Male' %}
+                </button>
+                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'female')"
+                        disabled>{% trans 'Female' %}
+                </button>
+                <button type="button" class="gender-btn" onclick="selectGender('search_gender', 'not-specified')"
+                        disabled>
+                    {% trans 'Nqkoi' %}
+                </button>
+            </div>
 
-        <div class="button-group" id="chat-topic">
-            <label>Тема:</label>
-            <button type="button" class="topic-btn active" onclick="selectTopic('chat')">Общуване</button>
-            <button type="button" class="topic-btn" onclick="selectTopic('flirt')">Флирт 18+</button>
-        </div>
-        <div style="display: flex; justify-content: center">
-            <button type="button" id="start-chat-button" onclick="this.disabled = true; onNewChat()">Започни чат</button>
-        </div>
+            <div class="button-group" id="chat-topic">
+                <label>{% trans 'Topic:' %}</label>
+                <button type="button" class="topic-btn active" onclick="selectTopic('chat')">{% trans 'Chat' %}</button>
+                <button type="button" class="topic-btn" onclick="selectTopic('flirt')">{% trans 'Flirt' %} 18+</button>
+            </div>
+            <div class="start-chat-btn-div">
+                <button type="button" id="start-chat-button"
+                        onclick="this.disabled = true; onNewChat()">{% trans 'Start chat' %}</button>
+            </div>
 
-        {% csrf_token %}
-    </form>
-</div>
+            {% csrf_token %}
+        </form>
+    </div>
 
-<div style="font-size: 16px; justify-content: center"
-     hx-get="{% url 'get_users_in_chat' %}" hx-trigger="every 5s">
-    Чатове онлайн: <span hx-target="this">{{ users_in_chat }}</span><br>
-</div>
+    <div class="chats-online">
+        {% trans 'Chats online: ' %}
+        <span hx-get="{% url 'get_users_in_chat' %}" hx-trigger="every 5s" hx-target="this"
+              style="padding-left: 5px">{{ users_in_chat }}</span><br>
+    </div>
 
 </main>
 
@@ -102,12 +112,12 @@
     }
 
 
-
-
     document.addEventListener('DOMContentLoaded', updatePartnerGenderSelection);
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
 
 </body>
 </html>

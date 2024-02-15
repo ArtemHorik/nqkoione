@@ -47,6 +47,10 @@ button:disabled {
     display: block;
 }
 
+.start-chat-btn-div {
+    display: flex;
+    justify-content: center;
+}
 
 #start-chat-button {
     background-color: #4CAF50;
@@ -58,27 +62,32 @@ button:disabled {
     background-color: #45a049;
 }
 
+.chats-online {
+    font-size: 16px;
+    justify-content: center;
+}
+
 @media (max-width: 768px) {
     body {
-        justify-content: flex-start; /* Изменение выравнивания на мобильных устройствах */
-        padding: 20px; /* Добавление отступа для лучшего вида на маленьких экранах */
+        justify-content: flex-start;
+        padding: 20px;
     }
 
     button {
         padding: 10px;
         margin-right: 0;
-        margin-bottom: 10px; /* Добавление отступа между кнопками */
-        border-radius: 10px; /* Меньший радиус скругления для мобильных устройств */
+        margin-bottom: 10px;
+        border-radius: 10px;
     }
 
     .button-group {
         display: flex;
-        flex-direction: column; /* Столбцовое расположение кнопок */
+        flex-direction: column;
     }
 
     #chat-container {
         margin: 10px;
-        width: auto; /* Автоматическая ширина для адаптации к размеру экрана */
-        box-shadow: none; /* Убрать тень на маленьких устройствах для более чистого вида */
+        width: auto;
+        box-shadow: none;
     }
 }

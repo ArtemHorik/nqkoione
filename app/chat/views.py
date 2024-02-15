@@ -153,4 +153,4 @@ def end_chat(request):
 
 
 def get_users_in_chat(request):
-    return HttpResponse(f'Чатове онлайн: <span>{ChatRoom.objects.count()}</span>')
+    return HttpResponse(f'<span style="padding-left: 5px">{ChatRoom.objects.count()}</span>')
