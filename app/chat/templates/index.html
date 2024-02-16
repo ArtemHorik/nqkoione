@@ -15,11 +15,25 @@
     <script src="https://unpkg.com/htmx.org"></script>
 </head>
 <body>
+<nav class="navbar navbar-expand-lg navbar-light m-1 p-2 rounded-pill">
+    <div class="container justify-content-between">
+        <a class="navbar-brand" href="/chat">NqkoiOne</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav" style="flex-grow: 0;"></div>
+
+
+    </div>
+</nav>
 
 <main>
 
     <div id="chat-container">
-        <form id="chat-form">
+
+        <div class="d-block" id="chat-form">
+
             <div class="button-group" id="my_gender">
                 <label>{% trans 'Your gender:' %}</label>
                 <button type="button" class="gender-btn"
@@ -45,18 +59,38 @@
                 </button>
             </div>
 
+
             <div class="button-group" id="chat-topic">
                 <label>{% trans 'Topic:' %}</label>
                 <button type="button" class="topic-btn active" onclick="selectTopic('chat')">{% trans 'Chat' %}</button>
                 <button type="button" class="topic-btn" onclick="selectTopic('flirt')">{% trans 'Flirt' %} 18+</button>
             </div>
-            <div class="start-chat-btn-div">
-                <button type="button" id="start-chat-button"
-                        onclick="this.disabled = true; onNewChat()">{% trans 'Start chat' %}</button>
+            <div class="d-flex justify-content-between align-items-center" id="langForm-and-chat">
+                <div class="button-group me-2">
+                    <span>{% trans 'Language:' %}</span>
+                    <form action="{% url 'set_language' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <select class="custom-select" name="language" onchange="this.form.submit()">
+                            {% get_current_language as LANGUAGE_CODE %}
+                            {% get_available_languages as LANGUAGES %}
+                            {% for lang in LANGUAGES %}
+                                <option value="{{ lang.0 }}" {% if lang.0 == LANGUAGE_CODE %} selected {% endif %}>
+                                    {{ lang.0|language_name_local }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                <div class="start-chat-btn-div">
+                    <button type="button" id="start-chat-button" onclick="this.disabled=true; onNewChat()">
+                        {% trans 'Start chat' %}
+                    </button>
+                </div>
             </div>
 
-            {% csrf_token %}
-        </form>
+
+        </div>
     </div>
 
     <div class="chats-online">

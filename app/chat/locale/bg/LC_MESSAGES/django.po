@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-15 19:39+0200\n"
+"POT-Creation-Date: 2024-02-16 15:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,82 +18,86 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: .\chat\templates\index.html:24
+#: .\app\chat\templates\index.html:38
 msgid "Your gender:"
 msgstr "Вашия пол:"
 
-#: .\chat\templates\index.html:26 .\chat\templates\index.html:37
+#: .\app\chat\templates\index.html:40 .\app\chat\templates\index.html:51
 msgid "Male"
 msgstr "Мъжки"
 
-#: .\chat\templates\index.html:28 .\chat\templates\index.html:40
+#: .\app\chat\templates\index.html:42 .\app\chat\templates\index.html:54
 msgid "Female"
 msgstr "Женски"
 
-#: .\chat\templates\index.html:30 .\chat\templates\index.html:44
+#: .\app\chat\templates\index.html:44 .\app\chat\templates\index.html:58
 msgid "Nqkoi"
 msgstr "Някой"
 
-#: .\chat\templates\index.html:35
+#: .\app\chat\templates\index.html:49
 msgid "Partner gender"
 msgstr "Пол на събеседника"
 
-#: .\chat\templates\index.html:49
+#: .\app\chat\templates\index.html:64
 msgid "Topic:"
 msgstr "Тема:"
 
-#: .\chat\templates\index.html:50 .\chat\templates\room.html:9
+#: .\app\chat\templates\index.html:65 .\app\chat\templates\room.html:9
 msgid "Chat"
 msgstr "Общуване"
 
-#: .\chat\templates\index.html:51
+#: .\app\chat\templates\index.html:66
 msgid "Flirt"
 msgstr "Флирт"
 
-#: .\chat\templates\index.html:55
+#: .\app\chat\templates\index.html:70
+msgid "Language:"
+msgstr "Език:"
+
+#: .\app\chat\templates\index.html:87
 msgid "Start chat"
 msgstr "Започни чат"
 
-#: .\chat\templates\index.html:63
+#: .\app\chat\templates\index.html:97
 msgid "Chats online: "
 msgstr "Чатове онлайн: "
 
-#: .\chat\templates\room.html:24
+#: .\app\chat\templates\room.html:24
 msgid "Typing..."
 msgstr "Събеседникът пише..."
 
-#: .\chat\templates\room.html:30
+#: .\app\chat\templates\room.html:30
 msgid "Enter your message..."
 msgstr "Въведете съобщение..."
 
-#: .\chat\templates\room.html:31
+#: .\app\chat\templates\room.html:31
 msgid "Send"
 msgstr "Изпрати"
 
-#: .\chat\templates\room.html:33
+#: .\app\chat\templates\room.html:33
 msgid "End chat"
 msgstr "Приключи чата"
 
-#: .\chat\templates\room.html:39
+#: .\app\chat\templates\room.html:39
 msgid "Searching for chat..."
 msgstr "Търсим събеседник..."
 
-#: .\chat\templates\room.html:46
+#: .\app\chat\templates\room.html:46
 msgid "Loading..."
 msgstr "Зареждане..."
 
-#: .\chat\templates\room.html:149
+#: .\app\chat\templates\room.html:149
 msgid "Connection lost. Recovering..."
 msgstr "Загуба на връзка. Възстановяване..."
 
-#: .\chat\templates\room.html:287
+#: .\app\chat\templates\room.html:287
 msgid "Chat ended."
 msgstr "Чатът е приключен."
 
-#: .\chat\templates\room.html:290
+#: .\app\chat\templates\room.html:290
 msgid "Change filters"
 msgstr "Промени филтрите"
 
-#: .\chat\templates\room.html:291
+#: .\app\chat\templates\room.html:291
 msgid "New chat"
 msgstr "Нов чат"
