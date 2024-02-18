@@ -11,8 +11,6 @@ class ChatRoom(Document):
 
     topic = StringField(max_length=50, required=True)
 
-    # age_range = ListField(StringField(max_length=15), default=list)
-    # creator_age = StringField(max_length=15)
     creator_gender = StringField(max_length=15)
     search_gender = StringField(max_length=15)
 
@@ -43,13 +41,12 @@ class ChatRoom(Document):
 class Message(Document):
     room = ReferenceField(ChatRoom, required=True, reverse_delete_rule=CASCADE)
     session_id = StringField(max_length=255, required=True)
-    content = StringField(required=True)
+    content = StringField(required=True, max_length=1500)
     timestamp = DateTimeField(default=datetime.now)
 
     meta = {
         'indexes': [
             'timestamp',
-            # 'session_id',
             'room',
 
             ('room', 'timestamp'),
@@ -74,7 +71,6 @@ def search_chat_room(topic, my_gender, search_gender=None):
             creator_gender=search_gender,
             search_gender__in=['not-specified', my_gender],
             second_user_joined=False,
-            # age_range=partner_age
         ).first()
 
     return chat_room
@@ -85,8 +81,6 @@ def create_chat_room(topic, my_gender, search_gender=None, ):
         topic=topic,
         creator_gender=my_gender,
         search_gender=search_gender
-        # allowed_genders=[my_gender] if my_gender != 'някой' else ['някой'],
-        # age_range=partner_age
     )
     new_room.save()
     return new_room

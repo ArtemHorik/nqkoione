@@ -27,7 +27,7 @@
         
 
         <div id="input-container">
-            <input type="text" id="message-input" placeholder="{% trans 'Enter your message...' %}">
+            <input type="text" id="message-input" maxlength="1500" placeholder="{% trans 'Enter your message...' %}">
             <button id="send-button">{% trans 'Send' %}</button>
         </div>
         <button id="end-chat-btn" onclick="endChat()" style="display: none">{% trans 'End chat' %}</button>
