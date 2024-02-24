@@ -1,5 +1,4 @@
 import json
-import random
 
 from bson import ObjectId
 from django.http import JsonResponse, HttpResponse
@@ -53,7 +52,6 @@ def search_or_create_chat_room(request):
         search_gender = data.get('search_gender')
         request.session['filter_data'] = data
 
-        # partner_age = data.get('partner_age', None)
         print(data)
 
         chat_room = search_chat_room(topic, creator_gender, search_gender)
@@ -141,6 +139,11 @@ def get_messages(request, room_id):
 
 
 def end_chat(request):
+    """
+    Ends chat.
+    :param request:
+    :return:
+    """
     try:
         data = json.loads(request.body)
         room_id = data['room_id']
@@ -153,4 +156,9 @@ def end_chat(request):
 
 
 def get_users_in_chat(request):
+    """
+    Returns HTML span with chats online count.
+    :param request:
+    :return:
+    """
     return HttpResponse(f'<span style="padding-left: 5px">{ChatRoom.objects.count()}</span>')
