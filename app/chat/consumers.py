@@ -6,7 +6,8 @@ from bson import ObjectId
 from channels.generic.websocket import AsyncWebsocketConsumer
 from mongoengine import DoesNotExist
 
-from chat.models import Message, ChatRoom
+from chat.models import ChatRoom
+from chat.services.chat_service import ChatService
 from config.redis_pool import get_redis
 
 
@@ -21,80 +22,77 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_id = None
         self.session_id = None
         self.room_group_name = None
-        # self.redis = None
-        self.users_count = 0
 
-    async def fetch_users_count(self):
-        users_count = await self.redis.get(f'users_count:{self.room_id}')
-        self.users_count = int(users_count) if users_count else 0
-
-    async def decr_users_count(self):
-        await self.redis.decr(f'users_count:{self.room_id}', 1)
-        await self.fetch_users_count()
-
-    async def incr_users_count(self):
-        await self.redis.incr(f'users_count:{self.room_id}', 1)
-        await self.fetch_users_count()
-
-    async def in_session_ids(self) -> bool:
-        return bool(await self.redis.sismember(f'sessions:{self.room_id}', self.session_id))
-
-    async def session_ids_append(self, session_id) -> None:
-        if await self.session_ids_count() < 2:
-            await self.redis.sadd(f'sessions:{self.room_id}', session_id)
-        else:
-            raise ValueError('You cannot have more than two sessions.')
-
-    async def session_ids_count(self) -> int:
-        return await self.redis.scard(f'sessions:{self.room_id}')
-
-    async def close_redis(self):
-        await self.redis.close()
-        del self.redis
-        print(f'REDIS CLOSED FOR SESSION ID {self.session_id}')
-
-    async def delete_redis_data(self):
-        await self.redis.delete(f'sessions:{self.room_id}', f'users_count:{self.room_id}')
-        print(self.redis.get(f'sessions:{self.room_id}'))
-        print(self.redis.get(f'users_count:{self.room_id}'))
-
-    async def connect(self):
-        """
-        Called when the websocket is handshaking
-        """
-        # Extract room name from the URL route
-        self.room_id = self.scope['url_route']['kwargs']['room_id']
+    def initialize_connection_attributes(self):
+        """Initializes connection attributes from the connecting request."""
+        self.room_id = self.scope['url_route']['kwargs']['room_id']  # Extract room name from the URL route
         self.session_id = self.scope['session'].session_key
         self.room_group_name = f'chat_{self.room_id}'
 
-        room = await self.get_room(self.room_id)
-        if room is None:
-            await self.close()
-            return
+    async def initialize_chat_service(self):
+        """Initializes the chat service if not already initialized."""
+        if not hasattr(self, 'chat_service'):
+            r = await get_redis()
+            self.chat_service = ChatService(redis=r, room_id=self.room_id, session_id=self.session_id)
 
-        if not hasattr(self, 'redis'):
-            self.redis = await get_redis()
+    async def reject_connection(self):
+        """Rejects the WebSocket connection with an appropriate message."""
+        await self.accept()
+        await self.send(text_data=json.dumps({
+            'type': 'redirect',
+            'message': 'You cannot be connected to this room.'
+        }))
+        await self.close(code=4000)
+        return
 
-        is_reconnect = await self.in_session_ids()
-        is_room_not_full = await self.session_ids_count() < 2
-        should_accept = is_reconnect or (is_room_not_full and not is_reconnect)
-
-        if not should_accept:
-            await self.close()
-            return
-
+    async def accept_connection(self):
+        """Accepts the WebSocket connection and performs necessary setup."""
+        await self.chat_service.mark_as_connected()
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
+    async def handle_reconnect(self, is_reconnect):
+        """Handles logic specific to users re-connecting to the chat."""
         if not is_reconnect:
-            await self.session_ids_append(self.session_id)
+            await self.chat_service.session_ids_append()
         else:
             await self.send(text_data=json.dumps({
                 'type': 'reconnect',
                 'message': ''
             }))
 
-        sessions_count = await self.session_ids_count()
+    async def manage_users_count_on_connection(self):
+        """Manages user counts and related logic when a new connection is established."""
+        users_count = await self.chat_service.get_users_count()
+        if users_count < 2:
+            await self.chat_service.incr_users_count()
+
+    async def connect(self):
+        """
+        Called when the websocket is handshaking
+        """
+        self.initialize_connection_attributes()
+
+        await self.initialize_chat_service()
+
+        room = await self.chat_service.get_room_by_id(self.room_id)
+        if room is None:
+            await self.close()
+            return
+
+        is_already_connected = await self.chat_service.is_already_connected()
+        is_reconnect = await self.chat_service.in_session_ids()
+        is_room_not_full = await self.chat_service.session_ids_count() < 2
+        should_accept = is_reconnect or (is_room_not_full and not is_reconnect)
+
+        if not should_accept or is_already_connected:
+            await self.reject_connection()
+
+        await self.accept_connection()
+
+        await self.handle_reconnect(is_reconnect)
+
+        sessions_count = await self.chat_service.session_ids_count()
 
         if not is_reconnect and sessions_count == 2:
             print(f'JOIN SECOND USER: {self.session_id}')
@@ -102,10 +100,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         self.cancel_user_removal(self.room_id)
 
-        await self.fetch_users_count()
-
-        if self.users_count < 2:
-            await self.incr_users_count()
+        await self.manage_users_count_on_connection()
 
     async def join_second_user(self, room):
         await self.channel_layer.group_send(
@@ -115,8 +110,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': 'Second user joined'
             }
         )
-        room.second_user_joined = True
-        await sync_to_async(room.save)()
+        await self.chat_service.join_second_user(room)
 
     async def second_user_joined_event(self, event):
         message = event['message']
@@ -125,27 +119,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message
         }))
 
-    @sync_to_async
-    def get_room(self, room_id):
-        room_id_obj = ObjectId(room_id)
-        try:
-            return ChatRoom.objects.get(id=room_id_obj)
-        except DoesNotExist:
-            return None
-
     async def disconnect(self, close_code):
         """
         Disconnect from chat.
         """
+        await self.chat_service.unmark_as_connected()
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         print('DISCONNECT')
+        if close_code != 4000:
 
-        await self.fetch_users_count()
+            users_count = await self.chat_service.get_users_count()
 
-        if self.users_count <= 1:
-            await self.delete_chat_room()
-        else:
-            self.schedule_user_removal(self.room_id)
+            if users_count <= 1:
+                await self.delete_chat_room()
+                await self.chat_service.close_redis()
+                del self.chat_service
+            else:
+                self.schedule_user_removal(self.room_id)
 
     def schedule_user_removal(self, room_id):
         """Starts timer if user didn't reconnect."""
@@ -161,16 +151,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def remove_user(self, room_id):
         """Removes user after a timer."""
-        if await self.redis.exists(f'users_count:{self.room_id}'):
-            await self.decr_users_count()
+        if self.chat_service.users_exists():
+            await self.chat_service.decr_users_count()
+            users_count = await self.chat_service.get_users_count()
+            print(f'User left from room {room_id}\nUSERS COUNT: {users_count}')
 
-            print(f'User left from room {room_id}\nUSERS COUNT: {self.users_count}')
-
-            if self.users_count == 1:
+            if users_count == 1:
                 await self.end_chat_on_left(room_id)
                 await self.delete_chat_room()
-        if hasattr(self, 'redis'):
-            await self.close_redis()
+
+        await self.chat_service.close_redis()
+        del self.chat_service
 
     async def end_chat_on_left(self, room_id):
         """
@@ -189,28 +180,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    @sync_to_async
-    def delete_room_from_db(self):
-        try:
-            room = ChatRoom.objects.get(id=self.room_id)
-            room.delete()
-            print(f'ROOM {self.room_id} DELETED FROM DB')
-        except DoesNotExist:
-            pass
-
     async def delete_chat_room(self):
         """
         Delete chat room.
         :return:
         """
-        await self.delete_redis_data()
-        if hasattr(self, 'redis'):
-            await self.close_redis()
+        if hasattr(self, 'chat_service'):
+            await self.chat_service.delete_chat_data()
 
         self.deletion_timers.pop(self.room_id, None)
-        await self.delete_room_from_db()
 
-        print(f'ROOM {self.room_id} DELETED')
+        print(f'ROOM DATA {self.room_id} DELETED')
 
     async def receive(self, text_data):
         """
@@ -220,6 +200,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = text_data_json.get('message')
         room_id = text_data_json.get('room_id')
         action = text_data_json.get('action')
+        ac_type = text_data_json.get('type')
 
         if action == 'end_chat':
             await self.channel_layer.group_send(
@@ -232,6 +213,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
             print('DELETING CHAT')
+            await self.chat_service.unmark_as_connected()
             await self.delete_chat_room()
 
         elif action == 'typing':
@@ -245,7 +227,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
 
         else:
-            await self.save_message(room_id, message, self.session_id)
+            await self.chat_service.save_message(message=message, room_id=room_id, session_id=self.session_id)
 
             # Send message
             await self.channel_layer.group_send(
@@ -274,6 +256,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         Sends end chat message to the WebSocket.
         """
+        await self.chat_service.unmark_as_connected()
         message = event['message']
         session_id = event['session_id']
         room_id = event['room_id']
@@ -285,15 +268,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'room_id': room_id
 
         }))
-
-    @sync_to_async
-    def save_message(self, room_id, message, session_id):
-        """
-        Saves message to the database.
-        """
-        if room_id:
-            room = ChatRoom.objects.get(id=room_id)
-            Message(room=room, content=message, session_id=session_id).save()
 
     async def chat_message(self, event):
         """

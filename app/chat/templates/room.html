@@ -118,6 +118,9 @@
                         addChatEndedBanner();
                         chatActive = false;
                         return;
+                    case 'redirect':
+                        window.location.href = '/chat';
+                        return;
                     case 'second_user_joined':
                         onSecondUserJoined();
                         displayMessage(data);

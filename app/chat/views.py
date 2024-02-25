@@ -6,7 +6,9 @@ from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST
 from mongoengine import DoesNotExist, ValidationError
 
+from config.redis_pool import get_redis
 from .models import ChatRoom, Message, search_chat_room, create_chat_room
+from .services.redis_service import RedisService
 
 
 def index(request):
@@ -19,7 +21,7 @@ def index(request):
     return render(request, 'index.html', {'users_in_chat': ChatRoom.objects.count()})
 
 
-def room(request, room_id):
+async def room(request, room_id):
     """
     Chat room view.
     :param request:
@@ -31,10 +33,20 @@ def room(request, room_id):
     except DoesNotExist:
         return redirect('index')
 
+    session_id = request.session.session_key
+
+    redis = await get_redis()
+    redis_service = RedisService(redis, room_id, session_id)
+    is_connected = await redis_service.is_already_connected()
+    await redis_service.close_redis()
+
+    if is_connected:
+        return redirect('index')
+
     return render(request, 'room.html', {
         'room_id': room_id,
         'session_key': request.session.session_key,
-        'filter_data': request.session['filter_data']
+        'filter_data': request.session.get('filter_data')
     })
 
 
